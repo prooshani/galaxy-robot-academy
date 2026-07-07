@@ -2,10 +2,10 @@
   "name": "galaxy-robot-academy",
   "private": true,
   "scripts": {
-    "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck",
-    "build": "pnpm -r build",
-    "dev": "pnpm -r dev"
+    "lint": "npx eslint apps/web/",
+    "typecheck": "cd apps/web && npx tsc --noEmit",
+    "build": "cd apps/web && npx next build",
+    "dev": "cd apps/web && npx next dev"
   },
   "engines": {
     "node": ">=18"
