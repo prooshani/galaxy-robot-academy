@@ -37,6 +37,9 @@ pnpm-debug.log*
 # TypeScript cache
 tsconfig.tsbuildinfo
 
+# Next.js
+next-env.d.ts
+
 # Lockfiles (keep pnpm-lock.yaml, ignore npm)
 package-lock.json
 yarn.lock
