@@ -1,0 +1,13 @@
+{
+  "name": "galaxy-robot-academy",
+  "private": true,
+  "scripts": {
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm -r build",
+    "dev": "pnpm -r dev"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
