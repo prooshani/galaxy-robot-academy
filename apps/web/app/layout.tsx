@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { NavBar } from "@/components/NavBar";
+import { MissionsProvider } from "./contexts/MissionsContext";
+import { SubmissionsProvider } from "./contexts/SubmissionsContext";
+import { UserProvider } from "./contexts/UserContext";
+import { RoleGuard } from "@/components/RoleGuard";
 
 export const metadata: Metadata = {
   title: "Galaxy Robot Academy",
@@ -13,7 +18,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <MissionsProvider>
+          <UserProvider>
+            <SubmissionsProvider>
+              <RoleGuard>
+                <NavBar />
+                {children}
+              </RoleGuard>
+            </SubmissionsProvider>
+          </UserProvider>
+        </MissionsProvider>
+      </body>
     </html>
   );
 }

@@ -1,11 +1,15 @@
+export type MissionStatus = "notStarted" | "submitted" | "reviewed" | "completed";
+
+export type UserRole = "student" | "teacher";
+
 export interface User {
   id: string;
   displayName: string;
-  role: "student" | "teacher";
+  role: UserRole | null;
   totalGE: number;
   rankId: string;
   badgeIds: string[];
-  missionStatus: Record<string, "not_started" | "in_progress" | "completed">;
+  missionStatus: Record<string, MissionStatus>;
   createdAt: string;
 }
 
@@ -33,4 +37,15 @@ export interface Rank {
   rankId: string;
   name: string;
   minGE: number;
+}
+
+export interface Submission {
+  submissionId: string;
+  missionId: string;
+  userId: string;
+  codeSnippet: string;
+  timestamp: string;
+  status: "submitted" | "reviewed" | "needs_revision";
+  geAwarded: number;
+  feedback?: string;
 }

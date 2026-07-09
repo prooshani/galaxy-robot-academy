@@ -1,18 +1,23 @@
-import { notFound } from "next/navigation";
-import { Layout } from "@galaxy/ui";
-import { missions, badges } from "@/lib/sampleData";
-import type { Badge } from "@galaxy/types";
+"use client";
 
-export default async function MissionDetailPage({
-  params,
-}: {
-  params: Promise<{ missionId: string }>;
-}) {
-  const { missionId } = await params;
+import { useParams, notFound } from "next/navigation";
+import { Layout } from "@galaxy/ui";
+import { badges } from "@/lib/sampleData";
+import { useMissionsContext } from "@/app/contexts/MissionsContext";
+import type { Badge } from "@galaxy/types";
+import { MissionSubmissionForm } from "./MissionSubmissionForm";
+
+export default function MissionDetailPage() {
+  const params = useParams();
+  const { missions } = useMissionsContext();
+
+  const missionId = Array.isArray(params?.missionId)
+    ? params.missionId[0]
+    : params?.missionId;
 
   const mission = missions.find((m) => m.missionId === missionId);
 
-  if (!mission) {
+  if (!missionId || !mission) {
     notFound();
   }
 
@@ -122,24 +127,7 @@ export default async function MissionDetailPage({
           )}
         </section>
 
-        {/* Coming Soon Banner */}
-        <div className="rounded-lg border border-blue-500/30 bg-blue-900/20 p-5 text-center">
-          <p className="text-2xl">🚧</p>
-          <h3 className="mt-1 text-lg font-semibold text-blue-300">
-            Submission Coming Soon
-          </h3>
-          <p className="mt-1 text-sm text-gray-400">
-            You will soon be able to submit your solutions directly from this
-            page. For now, review the mission details and complete the tasks
-            to earn your rewards!
-          </p>
-          <button
-            disabled
-            className="mt-3 inline-block rounded-lg border border-blue-500/30 bg-blue-500/20 px-4 py-2 text-sm font-medium text-blue-400 opacity-50"
-          >
-            Submit Mission (Coming Soon)
-          </button>
-        </div>
+        <MissionSubmissionForm missionId={mission.missionId} />
 
         {/* Back link */}
         <div className="text-center">

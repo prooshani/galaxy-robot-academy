@@ -95,7 +95,7 @@ export const missions: Mission[] = [
 export const user: User = {
   id: "student-1",
   displayName: "Engineer Nova",
-  role: "student",
+  role: null,
   totalGE: 225,
   rankId: "navigator",
   badgeIds: ["badge-start", "badge-loop", "badge-logic"],
@@ -103,7 +103,7 @@ export const user: User = {
     "mission-1": "completed",
     "mission-2": "completed",
     "mission-3": "completed",
-    "mission-4": "in_progress",
+    "mission-4": "notStarted",
   },
   createdAt: "2026-07-01T00:00:00Z",
 };
