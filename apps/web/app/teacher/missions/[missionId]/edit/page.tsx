@@ -1,31 +1,52 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams, notFound } from "next/navigation";
 import Link from "next/link";
 import { Layout } from "@galaxy/ui";
 import { useMissionsContext } from "@/app/contexts/MissionsContext";
 import { useUser } from "@/app/contexts/UserContext";
 import { canonicalBadges as badges } from "@/lib/academyContent";
 
-export default function NewMissionPage() {
+export default function EditMissionPage() {
   const { user } = useUser();
   const router = useRouter();
-  const { addMission } = useMissionsContext();
+  const params = useParams();
+  const { missions, updateMission } = useMissionsContext();
 
-  const [title, setTitle] = useState("");
-  const [sessionNumber, setSessionNumber] = useState("");
-  const [story, setStory] = useState("");
-  const [objectives, setObjectives] = useState("");
-  const [requiredTasks, setRequiredTasks] = useState("");
-  const [bonusTasks, setBonusTasks] = useState("");
-  const [rewardGE, setRewardGE] = useState("");
-  const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
+  const missionId = Array.isArray(params?.missionId)
+    ? params.missionId[0]
+    : params?.missionId;
+
+  const mission = missions.find((m) => m.missionId === missionId);
+
+  // All hooks must be called unconditionally before any early returns
+  const [title, setTitle] = useState(mission?.title ?? "");
+  const [sessionNumber, setSessionNumber] = useState(
+    mission ? String(mission.sessionNumber) : ""
+  );
+  const [story, setStory] = useState(mission?.story ?? "");
+  const [objectives, setObjectives] = useState(
+    mission?.objectives.join(", ") ?? ""
+  );
+  const [requiredTasks, setRequiredTasks] = useState(
+    mission?.requiredTasks.join(", ") ?? ""
+  );
+  const [bonusTasks, setBonusTasks] = useState(
+    mission?.bonusTasks.join(", ") ?? ""
+  );
+  const [rewardGE, setRewardGE] = useState(
+    mission ? String(mission.rewardGE) : ""
+  );
+  const [selectedBadges, setSelectedBadges] = useState<string[]>(
+    mission?.badgeIds ?? []
+  );
   const [error, setError] = useState<string | null>(null);
 
+  // Role guard — must come after all hooks
   if (user.role !== "teacher") {
     return (
-      <Layout title="Create Mission">
+      <Layout title="Edit Mission">
         <p className="text-gray-400">
           Access denied. Please{" "}
           <Link href="/role" className="text-cyan-400 underline hover:text-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded">
@@ -35,6 +56,11 @@ export default function NewMissionPage() {
         </p>
       </Layout>
     );
+  }
+
+  // Not found — must come after all hooks
+  if (!mission) {
+    notFound();
   }
 
   const toggleBadge = (badgeId: string) => {
@@ -77,9 +103,9 @@ export default function NewMissionPage() {
       return;
     }
 
-    addMission({
-      sessionNumber: parsedSession,
+    updateMission(mission.missionId, {
       title: title.trim(),
+      sessionNumber: parsedSession,
       story: story.trim(),
       objectives: objectives
         .split(",")
@@ -101,7 +127,7 @@ export default function NewMissionPage() {
   };
 
   return (
-    <Layout title="Create New Mission">
+    <Layout title="Edit Mission">
       <div className="mx-auto max-w-2xl">
         {error && (
           <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -254,7 +280,7 @@ export default function NewMissionPage() {
             <div className="flex flex-wrap gap-3">
               {badges.map((badge) => {
                 const checked = selectedBadges.includes(badge.badgeId);
-                const checkboxId = `create-badge-${badge.badgeId}`;
+                const checkboxId = `edit-badge-${badge.badgeId}`;
                 return (
                   <label
                     htmlFor={checkboxId}
@@ -285,9 +311,9 @@ export default function NewMissionPage() {
             <button
               type="submit"
               className="rounded-lg border border-cyan-500/30 bg-cyan-500/20 px-6 py-2.5 text-sm font-semibold text-cyan-200 transition-colors hover:border-cyan-400 hover:bg-cyan-500/30 hover:text-cyan-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
-              aria-label="Create Mission"
+              aria-label="Save Changes"
             >
-              Create Mission
+              Save Changes
             </button>
             <button
               type="button"

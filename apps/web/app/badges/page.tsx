@@ -2,7 +2,7 @@
 
 import { Layout } from "@galaxy/ui";
 import { useUser } from "@/app/contexts/UserContext";
-import { badges } from "@/lib/sampleData";
+import { canonicalBadges as badges } from "@/lib/academyContent";
 
 export default function BadgesPage() {
   const { user } = useUser();

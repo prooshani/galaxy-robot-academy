@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Layout } from "@galaxy/ui";
-import { badges } from "@/lib/sampleData";
+import { canonicalBadges as badges } from "@/lib/academyContent";
 import { getRankName } from "@galaxy/config";
 import { useUser } from "@/app/contexts/UserContext";
 import { useMissionsContext } from "@/app/contexts/MissionsContext";
@@ -129,7 +129,8 @@ function MissionCard({ mission, missionStatus, statusColors }: MissionCardProps)
   return (
     <Link
       href={`/mission/${mission.missionId}`}
-      className="block rounded-lg border border-purple-500/30 bg-[#111827] p-4 shadow-md transition-colors hover:border-purple-500/60"
+      className="block rounded-lg border border-purple-500/30 bg-[#111827] p-4 shadow-md transition-colors hover:border-purple-500/60 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+      aria-label={`View mission: ${mission.title}`}
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="rounded bg-purple-900/50 px-2 py-0.5 text-xs text-purple-300">

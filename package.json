@@ -3,11 +3,13 @@
   "private": true,
   "scripts": {
     "lint": "npx eslint apps/web/",
-    "typecheck": "cd apps/web && npx tsc --noEmit",
+    "typecheck": "cd apps/web && ./node_modules/.bin/tsc --noEmit",
     "build": "cd apps/web && npx next build",
-    "dev": "cd apps/web && npx next dev"
+    "dev": "cd apps/web && npx next dev",
+    "validate-curriculum": "node scripts/validate-curriculum.mjs"
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "packageManager": "pnpm@10.20.0"
 }

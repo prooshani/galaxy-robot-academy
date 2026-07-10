@@ -1,8 +1,9 @@
 "use client";
 
 import { useParams, notFound } from "next/navigation";
+import Link from "next/link";
 import { Layout } from "@galaxy/ui";
-import { badges } from "@/lib/sampleData";
+import { canonicalBadges as badges } from "@/lib/academyContent";
 import { useMissionsContext } from "@/app/contexts/MissionsContext";
 import { useUser } from "@/app/contexts/UserContext";
 import type { Badge } from "@galaxy/types";
@@ -99,7 +100,8 @@ export default function MissionDetailPage() {
                     type="checkbox"
                     checked={isCompleted}
                     onChange={() => toggleTaskCompletion(mission.missionId, false, index)}
-                    className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-purple-500"
+                    className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-purple-500 focus:outline-none"
+                    aria-label={task}
                   />
                   <span className={isCompleted ? "line-through opacity-70" : ""}>
                     {task}
@@ -132,8 +134,9 @@ export default function MissionDetailPage() {
                       type="checkbox"
                       checked={isCompleted}
                       onChange={() => toggleTaskCompletion(mission.missionId, true, index)}
-                      className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-purple-500"
-                    />
+                      className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-purple-500 focus:outline-none"
+                      aria-label={task}
+                      />
                     <span className={isCompleted ? "line-through opacity-70" : ""}>
                       {task}
                     </span>
@@ -192,12 +195,12 @@ export default function MissionDetailPage() {
 
         {/* Back link */}
         <div className="text-center">
-          <a
+          <Link
             href="/student"
-            className="text-purple-400 underline hover:text-purple-300"
+            className="text-purple-400 underline hover:text-purple-300 focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none rounded"
           >
             ← Back to Dashboard
-          </a>
+          </Link>
         </div>
       </div>
     </Layout>

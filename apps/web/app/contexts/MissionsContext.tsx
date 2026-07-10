@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Mission } from "@galaxy/types";
-import { missions as initialMissions } from "@/lib/sampleData";
+import { canonicalMissions } from "@/lib/academyContent";
 
 const MISSIONS_STORAGE_KEY = "gra_missions";
 
@@ -39,6 +39,31 @@ function parseMission(value: unknown): Mission | null {
     bonusTasks: v.bonusTasks as string[],
     rewardGE: v.rewardGE,
     badgeIds: v.badgeIds as string[],
+    // Preserve optional extended fields for curriculum metadata
+    slug: typeof v.slug === "string" ? v.slug : undefined,
+    shortTitle: typeof v.shortTitle === "string" ? v.shortTitle : undefined,
+    summary: typeof v.summary === "string" ? v.summary : undefined,
+    status:
+      typeof v.status === "string" &&
+      ["draft", "review", "published", "archived"].includes(v.status)
+        ? (v.status as Mission["status"])
+        : undefined,
+    courseId: typeof v.courseId === "string" ? v.courseId : undefined,
+    prerequisites: Array.isArray(v.prerequisites)
+      ? (v.prerequisites as string[])
+      : undefined,
+    estimatedMinutes:
+      typeof v.estimatedMinutes === "number" ? v.estimatedMinutes : undefined,
+    learningObjectives: Array.isArray(v.learningObjectives)
+      ? (v.learningObjectives as string[])
+      : undefined,
+    robotUpgrade:
+      typeof v.robotUpgrade === "string" ? v.robotUpgrade : undefined,
+    spaceFact: typeof v.spaceFact === "string" ? v.spaceFact : undefined,
+    submissionInstructions:
+      typeof v.submissionInstructions === "string"
+        ? v.submissionInstructions
+        : undefined,
   };
 }
 
@@ -54,23 +79,38 @@ function parseStoredMissions(value: unknown): Mission[] | null {
 
 function loadInitialMissions(): Mission[] {
   if (typeof window === "undefined") {
-    return initialMissions;
+    return canonicalMissions;
   }
 
   try {
     const stored = window.localStorage.getItem(MISSIONS_STORAGE_KEY);
-    if (!stored) return initialMissions;
+    if (!stored) return canonicalMissions;
+
     const parsed = parseStoredMissions(JSON.parse(stored));
-    if (parsed) return parsed;
+    if (!parsed) return canonicalMissions;
+
+    // Merge: ensure all canonical missions exist, preserve user-created ones
+    const canonicalIds = new Set(canonicalMissions.map((m) => m.missionId));
+    const userMissions = parsed.filter((m) => !canonicalIds.has(m.missionId));
+
+    // If localStorage only contains canonical missions (e.g. old mission-1..4),
+    // return fresh canonical data to ensure content is up to date.
+    if (userMissions.length === 0 && parsed.every((m) => canonicalIds.has(m.missionId))) {
+      return canonicalMissions;
+    }
+
+    return [...canonicalMissions, ...userMissions];
   } catch {
-    // Ignore storage/parsing errors and fall back to sample data.
+    // Ignore storage/parsing errors and fall back to canonical missions.
+    return canonicalMissions;
   }
-  return initialMissions;
 }
 
 const MissionsContext = createContext<{
   missions: Mission[];
   addMission: (mission: Omit<Mission, "missionId">) => void;
+  updateMission: (missionId: string, updates: Partial<Omit<Mission, "missionId">>) => void;
+  deleteMission: (missionId: string) => void;
 } | null>(null);
 
 export function MissionsProvider({ children }: { children: ReactNode }) {
@@ -95,7 +135,17 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     setMissions((prev) => [...prev, newMission]);
   };
 
-  const value = useMemo(() => ({ missions, addMission }), [missions]);
+  const updateMission = (missionId: string, updates: Partial<Omit<Mission, "missionId">>) => {
+    setMissions((prev) =>
+      prev.map((m) => (m.missionId === missionId ? { ...m, ...updates } : m))
+    );
+  };
+
+  const deleteMission = (missionId: string) => {
+    setMissions((prev) => prev.filter((m) => m.missionId !== missionId));
+  };
+
+  const value = useMemo(() => ({ missions, addMission, updateMission, deleteMission }), [missions]);
 
   return (
     <MissionsContext.Provider value={value}>

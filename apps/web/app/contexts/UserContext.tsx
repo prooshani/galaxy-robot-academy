@@ -10,7 +10,8 @@ import {
 } from "react";
 import { getRankByGE } from "@galaxy/config";
 import type { User, Mission, MissionStatus, UserRole, TaskCompletionStatus } from "@galaxy/types";
-import { user as initialUser, missions } from "@/lib/sampleData";
+import { user as initialUser } from "@/lib/sampleData";
+import { canonicalMissions } from "@/lib/academyContent";
 
 const USER_STORAGE_KEY = "gra_userState";
 const MISSIONS_STORAGE_KEY = "gra_missions";
@@ -48,27 +49,52 @@ function parseMissionRecord(value: unknown): Mission | null {
     bonusTasks: v.bonusTasks as string[],
     rewardGE: v.rewardGE,
     badgeIds: v.badgeIds as string[],
+    // Preserve optional extended fields for curriculum metadata
+    slug: typeof v.slug === "string" ? v.slug : undefined,
+    shortTitle: typeof v.shortTitle === "string" ? v.shortTitle : undefined,
+    summary: typeof v.summary === "string" ? v.summary : undefined,
+    status:
+      typeof v.status === "string" &&
+      ["draft", "review", "published", "archived"].includes(v.status)
+        ? (v.status as Mission["status"])
+        : undefined,
+    courseId: typeof v.courseId === "string" ? v.courseId : undefined,
+    prerequisites: Array.isArray(v.prerequisites)
+      ? (v.prerequisites as string[])
+      : undefined,
+    estimatedMinutes:
+      typeof v.estimatedMinutes === "number" ? v.estimatedMinutes : undefined,
+    learningObjectives: Array.isArray(v.learningObjectives)
+      ? (v.learningObjectives as string[])
+      : undefined,
+    robotUpgrade:
+      typeof v.robotUpgrade === "string" ? v.robotUpgrade : undefined,
+    spaceFact: typeof v.spaceFact === "string" ? v.spaceFact : undefined,
+    submissionInstructions:
+      typeof v.submissionInstructions === "string"
+        ? v.submissionInstructions
+        : undefined,
   };
 }
 
-// Load all missions: merge sample data with localStorage-persisted teacher missions
+// Load all missions: merge canonical academy data with localStorage-persisted teacher missions
 function loadAllMissions(): Mission[] {
-  if (typeof window === "undefined") return missions;
+  if (typeof window === "undefined") return canonicalMissions;
   try {
     const stored = window.localStorage.getItem(MISSIONS_STORAGE_KEY);
-    if (!stored) return missions;
+    if (!stored) return canonicalMissions;
     const parsed = JSON.parse(stored);
-    if (!Array.isArray(parsed)) return missions;
+    if (!Array.isArray(parsed)) return canonicalMissions;
     const valid: Mission[] = [];
     for (const item of parsed) {
       const m = parseMissionRecord(item);
       if (m) valid.push(m);
     }
-    // Merge: stored missions take priority (teacher edits win), then sample missions not in storage
+    // Merge: stored missions take priority (teacher edits win), then canonical missions not in storage
     const storedIds = new Set(valid.map((m) => m.missionId));
-    return [...valid, ...missions.filter((m) => !storedIds.has(m.missionId))];
+    return [...valid, ...canonicalMissions.filter((m) => !storedIds.has(m.missionId))];
   } catch {
-    return missions;
+    return canonicalMissions;
   }
 }
 

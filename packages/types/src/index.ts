@@ -1,4 +1,5 @@
 export type MissionStatus = "notStarted" | "submitted" | "reviewed" | "completed";
+export type MissionContentStatus = "draft" | "review" | "published" | "archived";
 
 export type UserRole = "student" | "teacher";
 
@@ -29,6 +30,18 @@ export interface Mission {
   bonusTasks: string[];
   rewardGE: number;
   badgeIds: string[];
+  // Optional extended fields for curriculum authoring
+  slug?: string;
+  shortTitle?: string;
+  summary?: string;
+  status?: MissionContentStatus;
+  courseId?: string;
+  prerequisites?: string[];
+  estimatedMinutes?: number;
+  learningObjectives?: string[];
+  robotUpgrade?: string;
+  spaceFact?: string;
+  submissionInstructions?: string;
 }
 
 export interface Badge {
@@ -54,4 +67,33 @@ export interface Submission {
   status: "submitted" | "reviewed" | "needs_revision";
   geAwarded: number;
   feedback?: string;
+}
+
+export interface Course {
+  courseId: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  targetAgeMin: number;
+  targetAgeMax: number;
+  estimatedWeeks: number;
+  sessionsPerWeek: number;
+  totalSessions: number;
+  status: "draft" | "active" | "archived";
+  missionIds: string[];
+  finalProjectMissionId: string;
+  version: number;
+}
+
+export interface HomeworkMission {
+  homeworkId: string;
+  missionId: string;
+  title: string;
+  summary: string;
+  requiredTasks: string[];
+  bonusChallenge?: string;
+  estimatedMinutes: number;
+  rewardGE: number;
+  status: MissionContentStatus;
 }
