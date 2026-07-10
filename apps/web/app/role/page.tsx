@@ -1,53 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Layout } from "@galaxy/ui";
+import { Layout, PageHeader, Panel, StatusChip } from "@galaxy/ui";
 import { useUser } from "@/app/contexts/UserContext";
 
 export default function RoleSelectionPage() {
-  const { setRole } = useUser();
+  const { user, setRole } = useUser();
   const router = useRouter();
+  const select = (role: "student" | "teacher") => { setRole(role); router.push(role === "teacher" ? "/teacher" : "/student"); };
 
-  const handleSelect = (role: "student" | "teacher") => {
-    setRole(role);
-    router.push(role === "teacher" ? "/teacher" : "/student");
-  };
-
-  return (
-    <Layout title="Welcome to Galaxy Robot Academy">
-      <p className="mb-8 text-center text-gray-400">
-        How will you be using the academy today?
-      </p>
-      <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
-        <button
-          type="button"
-          onClick={() => handleSelect("student")}
-          className="w-full max-w-xs rounded-lg border border-cyan-500/30 bg-[#111827] p-8 text-center shadow-md transition-colors hover:border-cyan-400 hover:shadow-cyan-950/30 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
-          aria-label="Select student role"
-        >
-          <span className="mb-4 block text-4xl">🚀</span>
-          <span className="block text-lg font-semibold text-gray-100">
-            I&apos;m a Student
-          </span>
-          <span className="mt-2 block text-sm text-gray-400">
-            Complete missions and earn badges
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSelect("teacher")}
-          className="w-full max-w-xs rounded-lg border border-purple-500/30 bg-[#111827] p-8 text-center shadow-md transition-colors hover:border-purple-400 hover:shadow-purple-950/30 focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none"
-          aria-label="Select teacher role"
-        >
-          <span className="mb-4 block text-4xl">👩‍🏫</span>
-          <span className="block text-lg font-semibold text-gray-100">
-            I&apos;m a Teacher
-          </span>
-          <span className="mt-2 block text-sm text-gray-400">
-            Review submissions and manage missions
-          </span>
-        </button>
-      </div>
-    </Layout>
-  );
+  return <Layout><PageHeader eyebrow="Academy entry gate" title="Choose your station" description="Select how you are entering today. You can switch roles here at any time." />
+    <div className="grid gap-5 md:grid-cols-2">
+      <button type="button" onClick={() => select("student")} aria-pressed={user.role === "student"} className="group rounded-2xl text-left focus-visible:outline-none"><Panel className="h-full border-brand/30 transition group-hover:border-brand group-hover:-translate-y-0.5 group-aria-pressed:border-brand group-aria-pressed:bg-brand/10 motion-reduce:transform-none"><StatusChip tone="info">Student experience</StatusChip><span className="mt-6 block text-3xl text-brand" aria-hidden="true">◇</span><span className="mt-4 block font-display text-2xl font-bold text-foreground">Enter as Student Engineer</span><span className="mt-2 block text-muted">Complete missions, build R0-B0, track Galaxy Energy, and unlock badges.</span><span className="mt-6 block font-semibold text-brand">Open Explorer Cockpit →</span></Panel></button>
+      <button type="button" onClick={() => select("teacher")} aria-pressed={user.role === "teacher"} className="group rounded-2xl text-left focus-visible:outline-none"><Panel className="h-full border-brand-secondary/30 transition group-hover:border-brand-secondary group-hover:-translate-y-0.5 group-aria-pressed:border-brand-secondary group-aria-pressed:bg-brand-secondary/10 motion-reduce:transform-none"><StatusChip tone="submitted">Teacher experience</StatusChip><span className="mt-6 block text-3xl text-brand-secondary" aria-hidden="true">▦</span><span className="mt-4 block font-display text-2xl font-bold text-foreground">Enter Mission Control</span><span className="mt-2 block text-muted">Plan missions, review transmissions, give feedback, and manage rewards.</span><span className="mt-6 block font-semibold text-brand-secondary">Open Mission Control →</span></Panel></button>
+    </div>
+  </Layout>;
 }

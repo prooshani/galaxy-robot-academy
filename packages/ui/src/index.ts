@@ -18,3 +18,11 @@ export {
   Textarea,
 } from "./Primitives";
 export type { ButtonProps, StatusTone } from "./Primitives";
+export {
+  AchievementCard,
+  GalaxyEnergyMeter,
+  Metric,
+  MissionStatusChip,
+  RankProgress,
+} from "./StudentProgress";
+export type { RankStep } from "./StudentProgress";

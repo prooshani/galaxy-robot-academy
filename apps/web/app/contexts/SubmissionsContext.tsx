@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { Submission } from "@galaxy/types";
 import { submissions as initialSubmissions } from "@/lib/sampleSubmissions";
+import { applySubmissionReview } from "@/lib/teacherReview";
 
 const SUBMISSIONS_STORAGE_KEY = "gra_submissionsState";
 type SubmissionStatus = Submission["status"];
@@ -175,12 +176,11 @@ export function SubmissionsProvider({ children }: { children: ReactNode }) {
     setSubmissions((currentSubmissions) =>
       currentSubmissions.map((submission) =>
         submission.submissionId === input.submissionId
-          ? {
-              ...submission,
+          ? applySubmissionReview(submission, {
               status: input.status ?? "reviewed",
               geAwarded: input.geAwarded,
               feedback: input.feedback,
-            }
+            })
           : submission
       )
     );

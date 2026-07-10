@@ -1,164 +1,41 @@
 "use client";
 
 import Link from "next/link";
+import { PageContainer, Panel, StatusChip } from "@galaxy/ui";
 import { useUser } from "@/app/contexts/UserContext";
+
+const destinations = [
+  { href: "/student", icon: "◇", title: "Student cockpit", description: "Open missions, track progress, and send code transmissions." },
+  { href: "/teacher", icon: "▦", title: "Mission Control", description: "Plan missions, review submissions, and award Galaxy Energy." },
+  { href: "/badges", icon: "✦", title: "Badge Hall", description: "Explore Academy achievements and unlocked systems." },
+  { href: "/role", icon: "◎", title: "Choose role", description: "Switch between Student Engineer and Mission Control." },
+];
 
 export default function Home() {
   const { user } = useUser();
-
-  const hasRole = user.role !== null;
+  const primaryHref = user.role === "teacher" ? "/teacher" : user.role === "student" ? "/student" : "/role";
+  const primaryLabel = user.role === "teacher" ? "Enter Mission Control" : user.role === "student" ? "Continue expedition" : "Choose your role";
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-[#0a0e1a] px-4 py-12 text-gray-100">
-      {/* Starry background effect */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        aria-hidden="true"
-        style={{
-          backgroundImage:
-            "radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.3), transparent), radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,0.2), transparent), radial-gradient(1px 1px at 50% 10%, rgba(255,255,255,0.3), transparent), radial-gradient(1px 1px at 70% 80%, rgba(255,255,255,0.2), transparent), radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,0.3), transparent), radial-gradient(1px 1px at 15% 85%, rgba(255,255,255,0.2), transparent), radial-gradient(1px 1px at 45% 45%, rgba(255,255,255,0.3), transparent), radial-gradient(1px 1px at 80% 15%, rgba(255,255,255,0.2), transparent), radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.3), transparent), radial-gradient(1px 1px at 25% 35%, rgba(255,255,255,0.2), transparent)",
-        }}
-      />
+    <main id="main-content" className="min-h-[calc(100vh-4.5rem)]">
+      <PageContainer className="flex min-h-[calc(100vh-4.5rem)] flex-col justify-center py-12 sm:py-16">
+        <section className="relative overflow-hidden rounded-3xl border border-brand/30 bg-gradient-to-br from-brand/12 via-panel/90 to-brand-secondary/15 px-5 py-10 text-center shadow-[var(--shadow-glow-cyan)] sm:px-10 sm:py-14" aria-labelledby="home-title">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-brand/40 bg-brand/10 font-mono font-black text-brand" aria-hidden="true">R0</div>
+          <StatusChip tone="info" className="mt-5">Build · Think · Explore</StatusChip>
+          <h1 id="home-title" className="mx-auto mt-4 max-w-4xl font-display text-4xl font-bold tracking-tight text-foreground sm:text-6xl">Galaxy Robot Academy</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-base text-muted sm:text-lg">Learn software engineering through a twelve-mission expedition. Build R0-B0 system by system, test ideas, and earn progress through real work.</p>
+          <Link href={primaryHref} className="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl border border-brand bg-brand px-6 font-bold text-canvas transition hover:brightness-110">{primaryLabel}<span className="ml-2" aria-hidden="true">→</span></Link>
+          {user.role && <p className="mt-3 text-sm text-muted">Welcome back, {user.displayName}.</p>}
+        </section>
 
-      <div className="relative z-10 mx-auto max-w-4xl text-center">
-        {/* Hero */}
-        <div className="mb-8">
-          <span className="mb-4 block text-6xl" aria-hidden="true">
-            🚀
-          </span>
-          <h1 className="text-4xl font-bold text-cyan-400 sm:text-5xl lg:text-6xl">
-            Galaxy Robot Academy
-          </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-400 sm:text-xl">
-            Teaching software engineering through space-themed missions.
-            Complete challenges, earn Galaxy Energy, unlock badges, and watch
-            R0-B0 evolve!
-          </p>
-        </div>
-
-        {/* Role-aware greeting */}
-        {hasRole ? (
-          <div className="mb-10 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-6 py-4 shadow-lg shadow-cyan-950/20">
-            <p className="text-lg font-semibold text-cyan-300">
-              Welcome back, {user.displayName}!
-            </p>
-            <p className="mt-1 text-sm text-gray-400">
-              {user.role === "student"
-                ? "Ready for your next mission?"
-                : "Manage missions and review submissions."}
-            </p>
-            <Link
-              href={user.role === "student" ? "/student" : "/teacher"}
-              className="mt-3 inline-block rounded-lg border border-cyan-500/40 bg-cyan-500/20 px-5 py-2 text-sm font-medium text-cyan-200 transition-colors hover:border-cyan-400 hover:bg-cyan-500/30 hover:text-cyan-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
-              aria-label={
-                user.role === "student"
-                  ? "Go to Student Dashboard"
-                  : "Go to Teacher Dashboard"
-              }
-            >
-              {user.role === "student"
-                ? "Go to Student Dashboard"
-                : "Go to Teacher Dashboard"}
-            </Link>
+        <section className="mt-8" aria-labelledby="destinations-title">
+          <h2 id="destinations-title" className="font-display text-2xl font-semibold text-foreground">Choose destination</h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {destinations.map((item) => <Link key={item.href} href={item.href} className="group rounded-2xl focus-visible:outline-none"><Panel className="h-full transition duration-200 group-hover:-translate-y-0.5 group-hover:border-brand-secondary/50 motion-reduce:transform-none motion-reduce:transition-none"><span className="flex size-11 items-center justify-center rounded-xl border border-border bg-canvas/50 text-xl text-brand" aria-hidden="true">{item.icon}</span><h3 className="mt-4 font-display text-lg font-semibold text-foreground">{item.title}</h3><p className="mt-2 text-sm text-muted">{item.description}</p></Panel></Link>)}
           </div>
-        ) : (
-          <div className="mb-10 rounded-lg border border-purple-500/30 bg-purple-500/10 px-6 py-4 shadow-lg shadow-purple-950/20">
-            <p className="text-lg font-semibold text-purple-300">
-              Choose your role to begin
-            </p>
-            <p className="mt-1 text-sm text-gray-400">
-              Are you here to learn or to teach?
-            </p>
-            <Link
-              href="/role"
-              className="mt-3 inline-block rounded-lg border border-purple-500/40 bg-purple-500/20 px-5 py-2 text-sm font-medium text-purple-200 transition-colors hover:border-purple-400 hover:bg-purple-500/30 hover:text-purple-100 focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none"
-              aria-label="Select a role"
-            >
-              Select a Role
-            </Link>
-          </div>
-        )}
-
-        {/* Navigation cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <NavCard
-            href="/student"
-            icon="🚀"
-            title="Student Dashboard"
-            description="View missions, track progress, and submit code."
-            accent="cyan"
-          />
-          <NavCard
-            href="/teacher"
-            icon="👩‍🏫"
-            title="Teacher Dashboard"
-            description="Create missions, review submissions, and award GE."
-            accent="purple"
-          />
-          <NavCard
-            href="/badges"
-            icon="🏅"
-            title="Badges"
-            description="Browse all available badges and your collection."
-            accent="cyan"
-          />
-          <NavCard
-            href="/role"
-            icon="🎭"
-            title="Role Selection"
-            description="Switch between student and teacher views."
-            accent="purple"
-          />
-        </div>
-
-        {/* Footer */}
-        <footer className="mt-12 text-sm text-gray-600">
-          <p>
-            Built for young engineers. Powered by curiosity and Galaxy Energy.
-          </p>
-        </footer>
-      </div>
+        </section>
+        <footer className="mt-10 border-t border-border pt-5 text-center text-sm text-muted">Built for young engineers. Powered by curiosity and Galaxy Energy.</footer>
+      </PageContainer>
     </main>
-  );
-}
-
-/* ── Sub-components ──────────────────────────────────────────── */
-
-interface NavCardProps {
-  href: string;
-  icon: string;
-  title: string;
-  description: string;
-  accent: "cyan" | "purple";
-}
-
-function NavCard({ href, icon, title, description, accent }: NavCardProps) {
-  const borderClass =
-    accent === "cyan"
-      ? "border-cyan-500/30 hover:border-cyan-400/60"
-      : "border-purple-500/30 hover:border-purple-400/60";
-  const bgClass =
-    accent === "cyan"
-      ? "hover:bg-cyan-500/10"
-      : "hover:bg-purple-500/10";
-  const iconBgClass =
-    accent === "cyan"
-      ? "bg-cyan-400/10"
-      : "bg-purple-400/10";
-
-  return (
-    <Link
-      href={href}
-      className={`group flex flex-col items-center gap-3 rounded-lg border ${borderClass} ${bgClass} bg-[#111827] p-6 shadow-md transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none`}
-    >
-      <span
-        className={`flex h-14 w-14 items-center justify-center rounded-lg text-3xl ${iconBgClass}`}
-        aria-hidden="true"
-      >
-        {icon}
-      </span>
-      <h2 className="text-base font-semibold text-gray-100">{title}</h2>
-      <p className="text-sm text-gray-400">{description}</p>
-    </Link>
   );
 }

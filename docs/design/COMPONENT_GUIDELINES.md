@@ -2,7 +2,16 @@
 
 ## Shared rules
 
-Every component defines purpose, anatomy, variants/sizes, keyboard/focus behavior, responsive layout, loading/empty/error handling, and forbidden use. Minimum target 44×44px. Status uses label plus icon/color.
+Normative primitive and structural contracts live in [Design System Architecture](DESIGN_SYSTEM.md). This document defines Academy compositions and integration rules. Every composition declares ownership, purpose, anatomy, semantic variants/sizes, applicable states, keyboard/focus behavior, accessible name and ARIA requirements, responsive layout, loading/empty/error handling, and forbidden use. Minimum target is 44×44px. Status always uses human text plus icon and/or color.
+
+Composition rules:
+
+- Compose shared primitives; do not restyle native controls route by route.
+- Keep mission, reward, badge, role, and progression rules outside presentation components.
+- A composition may map domain status to a semantic primitive variant, but must not pass arbitrary colors.
+- Loading preserves geometry; errors stay near their source; empty states provide one useful next action.
+- State changes never remove user-entered code, notes, review feedback, or mission form data.
+- Reduced-motion and focus behavior inherit foundation contracts and remain testable at 320px and 400% zoom.
 
 ## Key components
 
@@ -36,15 +45,15 @@ Student, mission, submitted time, status, code/notes preview, review action. Que
 
 ### DataTable
 
-Caption, headers with scope, body, optional sort/filter/pagination, row actions. Dense/comfortable variants. Provide horizontal containment and accessible sort state. Do not use table for simple card layout; never remove headers visually and semantically.
+Shared DataTable contract is defined in [Design System Architecture](DESIGN_SYSTEM.md#datatable). Academy tables supply mission/student labels, human-readable status, and domain actions. Caption, scoped headers, sorting, selection, pagination, loading rows, empty state, and region error remain owned by the shared primitive. Do not use a table for simple card layout; never remove headers visually or semantically.
 
 ### Forms / FormSection
 
-Visible label, hint, control, validation, error. Required state in text, not asterisk alone. Group related fields with fieldset/legend. Preserve entries on errors. Loading button retains label and announces state. Mission task lists should use repeatable fields eventually, not comma parsing.
+Shared FormField/FormSection contracts are defined in [Design System Architecture](DESIGN_SYSTEM.md#formsection). Academy forms provide mission-specific labels, validation messages, task-row composition, reward and badge selectors. Preserve entries on every error. Mission task lists use repeatable fields as the target design, not comma parsing.
 
 ### Dialogs
 
-Title, description, content, primary/secondary actions, close. Confirmation names object and consequence. Initial focus on least destructive sensible control; trap focus; Escape closes unless irreversible operation underway; restore focus.
+Shared ConfirmationDialog contract is defined in [Design System Architecture](DESIGN_SYSTEM.md#confirmationdialog). Academy confirmation copy names the mission, submission, badge, or role and states its consequence. Domain components provide copy and callbacks only; focus, overlay, inert background, Escape behavior, loading, error, and focus restoration remain primitive responsibilities.
 
 ### CodeSubmissionPanel
 

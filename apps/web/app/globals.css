@@ -37,7 +37,7 @@
   --shadow-panel: 0 18px 48px rgb(2 5 16 / 0.34); --shadow-glow-cyan: 0 0 24px rgb(85 223 245 / 0.18);
   --shadow-glow-purple: 0 0 28px rgb(155 124 250 / 0.16);
   --radius-sm: .5rem; --radius-md: .75rem; --radius-lg: 1rem; --radius-xl: 1.5rem;
-  --motion-fast: 140ms; --motion-base: 220ms; --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-fast: 180ms; --motion-base: 260ms; --ease-out: cubic-bezier(.2,.8,.2,1);
 }
 
 * { box-sizing: border-box; }
@@ -69,5 +69,6 @@ h1, h2 { font-family: var(--font-space-grotesk), var(--font-inter), sans-serif; 
 p { text-wrap: pretty; }
 .skip-link { position: fixed; left: 1rem; top: 1rem; z-index: 100; transform: translateY(-150%); border-radius: var(--radius-md); background: hsl(var(--ion-cyan)); color: hsl(var(--text-inverse)); padding: .65rem 1rem; font-weight: 700; transition: transform var(--motion-fast); }
 .skip-link:focus { transform: translateY(0); }
-.surface { border: 1px solid hsl(var(--subtle-border)); background: linear-gradient(145deg, rgb(27 41 71 / .82), rgb(16 24 46 / .86)); box-shadow: var(--shadow-panel); backdrop-filter: blur(14px); }
+.surface { border: 1px solid hsl(var(--subtle-border)); background: linear-gradient(145deg, rgb(27 41 71 / .94), rgb(16 24 46 / .96)); box-shadow: var(--shadow-panel); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .surface { background: hsl(var(--panel)); } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }

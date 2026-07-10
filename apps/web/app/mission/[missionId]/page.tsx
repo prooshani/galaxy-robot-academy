@@ -1,208 +1,74 @@
 "use client";
 
-import { useParams, notFound } from "next/navigation";
 import Link from "next/link";
-import { Layout } from "@galaxy/ui";
-import { canonicalBadges as badges } from "@/lib/academyContent";
+import { notFound, useParams } from "next/navigation";
+import { Checkbox, GalaxyEnergyChip, MissionStatusChip, Panel, ProgressBar, StatusChip } from "@galaxy/ui";
+import type { Badge, Submission } from "@galaxy/types";
+import { canonicalBadges as badges, getOrderedMissions } from "@/lib/academyContent";
+import { getNextAvailableMission } from "@/lib/missionExperience";
 import { useMissionsContext } from "@/app/contexts/MissionsContext";
+import { useSubmissions } from "@/app/contexts/SubmissionsContext";
 import { useUser } from "@/app/contexts/UserContext";
-import type { Badge } from "@galaxy/types";
 import { MissionSubmissionForm } from "./MissionSubmissionForm";
+
+function latestSubmission(submissions: Submission[], missionId: string, userId: string): Submission | undefined {
+  return submissions.find((submission) => submission.missionId === missionId && submission.userId === userId);
+}
 
 export default function MissionDetailPage() {
   const params = useParams();
   const { missions } = useMissionsContext();
-
-  const missionId = Array.isArray(params?.missionId)
-    ? params.missionId[0]
-    : params?.missionId;
-
   const { user, toggleTaskCompletion } = useUser();
+  const { submissions } = useSubmissions();
+  const missionId = Array.isArray(params?.missionId) ? params.missionId[0] : params?.missionId;
+  const mission = missions.find((item) => item.missionId === missionId);
 
-  const mission = missions.find((m) => m.missionId === missionId);
+  if (!missionId || !mission) notFound();
 
-  if (!missionId || !mission) {
-    notFound();
-  }
-
-  const missionBadges: Badge[] = badges.filter((b) =>
-    mission.badgeIds.includes(b.badgeId)
-  );
-
-  const requiredTasks = mission.requiredTasks;
-  const bonusTasks = mission.bonusTasks;
-
+  const missionBadges: Badge[] = badges.filter((badge) => mission.badgeIds.includes(badge.badgeId));
   const taskStatus = user.missionTasksCompleted[mission.missionId] ?? {
-    requiredTasks: requiredTasks.map(() => false),
-    bonusTasks: bonusTasks.map(() => false),
+    requiredTasks: mission.requiredTasks.map(() => false),
+    bonusTasks: mission.bonusTasks.map(() => false),
   };
-
-  const allRequiredComplete =
-    requiredTasks.length > 0 &&
-    requiredTasks.every((_, i) => taskStatus.requiredTasks[i] ?? false);
+  const requiredComplete = mission.requiredTasks.filter((_, index) => taskStatus.requiredTasks[index] ?? false).length;
+  const bonusComplete = mission.bonusTasks.filter((_, index) => taskStatus.bonusTasks[index] ?? false).length;
+  const allRequiredComplete = mission.requiredTasks.length > 0 && requiredComplete === mission.requiredTasks.length;
+  const submission = latestSubmission(submissions, mission.missionId, user.id);
+  const nextMission = getNextAvailableMission(getOrderedMissions(), missions, mission.missionId);
+  const missionStatus = submission?.status === "needs_revision" ? "needs_revision" : submission?.status ?? user.missionStatus[mission.missionId] ?? "notStarted";
+  const isComplete = user.missionStatus[mission.missionId] === "completed" || (submission?.status === "reviewed" && submission.geAwarded > 0);
+  const robotMessage = isComplete ? "Mission complete. New module ready for installation." : submission?.status === "needs_revision" ? "Signal needs another scan. Read Mission Control feedback, then resend." : submission?.status === "submitted" ? "Transmission received. I will keep systems warm while review is in progress." : allRequiredComplete ? "Flight checks complete. Your code bench is ready for transmission." : "Flight plan loaded. Complete each required check to prepare R0-B0.";
 
   return (
-    <Layout title={mission.title}>
-      <div className="mx-auto max-w-4xl space-y-8">
-        {/* Mission header */}
-        <div>
-          <div className="mb-2 flex items-center gap-2">
-            <span className="rounded bg-purple-900/50 px-2 py-0.5 text-xs text-purple-300">
-              Session {mission.sessionNumber}
-            </span>
-            <span className="text-sm font-semibold text-cyan-400">
-              +{mission.rewardGE} GE
-            </span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-100">
-            {mission.title}
-          </h1>
+    <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <nav aria-label="Breadcrumb" className="mb-6 text-sm"><Link href="/student" className="inline-flex min-h-11 items-center text-muted underline-offset-4 hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">← Mission journey</Link></nav>
+      <header className="relative overflow-hidden rounded-3xl border border-brand/30 bg-gradient-to-br from-brand/15 via-panel to-brand-secondary/10 p-6 shadow-[var(--shadow-panel)] sm:p-8">
+        <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-brand/10 blur-3xl" aria-hidden="true" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl"><p className="text-xs font-bold uppercase tracking-[.16em] text-brand">Engineering Bay · Session {mission.sessionNumber}</p><h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-foreground sm:text-5xl">{mission.title}</h1><p className="mt-3 max-w-2xl text-base leading-7 text-muted">{mission.summary ?? "Prepare R0-B0, complete mission checks, then send your code to Mission Control."}</p></div>
+          <div className="flex max-w-lg flex-wrap gap-2"><MissionStatusChip status={missionStatus} /><GalaxyEnergyChip value={mission.rewardGE} />{mission.estimatedMinutes && <StatusChip tone="info">{mission.estimatedMinutes} min</StatusChip>}{mission.robotUpgrade && <StatusChip tone="success">{mission.robotUpgrade}</StatusChip>}</div>
+        </div>
+      </header>
+
+      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="min-w-0 space-y-8">
+          <Panel><p className="text-xs font-bold uppercase tracking-[.16em] text-brand-secondary">Mission briefing</p><h2 className="mt-2 font-display text-2xl font-bold text-foreground">Why this mission matters</h2><p className="mt-4 max-w-[68ch] text-base leading-7 text-secondary">{mission.story}</p><div className="mt-6 grid gap-5 border-t border-border pt-5 md:grid-cols-2"><div><h3 className="font-semibold text-foreground">Learning objectives</h3><ul className="mt-3 space-y-2 text-sm leading-6 text-muted">{(mission.learningObjectives ?? mission.objectives).map((objective) => <li key={objective} className="flex gap-2"><span className="text-brand" aria-hidden="true">▹</span>{objective}</li>)}</ul></div><div className="space-y-4">{mission.spaceFact && <div><h3 className="font-semibold text-foreground">Space fact</h3><p className="mt-2 text-sm leading-6 text-muted">{mission.spaceFact}</p></div>}{mission.prerequisites && mission.prerequisites.length > 0 && <div><h3 className="font-semibold text-foreground">Before launch</h3><p className="mt-2 text-sm text-muted">{mission.prerequisites.join(" · ")}</p></div>}</div></div></Panel>
+
+          <section aria-labelledby="tasks-heading"><div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-brand">Mission checks</p><h2 id="tasks-heading" className="mt-1 font-display text-2xl font-bold text-foreground">Task checklist</h2></div><StatusChip tone={allRequiredComplete ? "success" : "info"}>{requiredComplete} of {mission.requiredTasks.length} required</StatusChip></div><Panel className="p-0 overflow-hidden"><div className="border-b border-border p-5 sm:p-6"><ProgressBar value={requiredComplete} max={mission.requiredTasks.length} label="Required mission checks" /></div><div className="divide-y divide-border">{mission.requiredTasks.map((task, index) => { const checked = taskStatus.requiredTasks[index] ?? false; return <label key={`${mission.missionId}-required-${index}`} className={`flex min-h-14 cursor-pointer items-center gap-3 px-5 py-3 transition sm:px-6 ${checked ? "bg-success/10" : "hover:bg-white/5"}`}><Checkbox checked={checked} onChange={() => toggleTaskCompletion(mission.missionId, false, index)} /><span className={`text-sm leading-6 ${checked ? "text-success line-through" : "text-foreground"}`}>{task}</span></label>; })}</div></Panel>{allRequiredComplete && <p className="mt-3 rounded-xl border border-success/35 bg-success/10 px-4 py-3 text-sm font-semibold text-success" role="status">All required tasks complete. Code bench unlocked.</p>}</section>
+
+          {mission.bonusTasks.length > 0 && <section aria-labelledby="bonus-heading"><div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-energy">Optional boost</p><h2 id="bonus-heading" className="mt-1 font-display text-xl font-bold text-foreground">Bonus tasks</h2></div><StatusChip tone="warning">{bonusComplete} of {mission.bonusTasks.length} complete</StatusChip></div><Panel className="divide-y divide-border p-0">{mission.bonusTasks.map((task, index) => { const checked = taskStatus.bonusTasks[index] ?? false; return <label key={`${mission.missionId}-bonus-${index}`} className={`flex min-h-14 cursor-pointer items-center gap-3 px-5 py-3 transition sm:px-6 ${checked ? "bg-warning/10" : "hover:bg-white/5"}`}><Checkbox checked={checked} onChange={() => toggleTaskCompletion(mission.missionId, true, index)} /><span className={`text-sm leading-6 ${checked ? "text-warning line-through" : "text-foreground"}`}>{task}</span></label>; })}</Panel></section>}
+
+          <MissionSubmissionForm missionId={mission.missionId} submission={submission} instructions={mission.submissionInstructions} />
+
+          {isComplete && <Panel className="border-success/40 bg-success/10"><p className="text-xs font-bold uppercase tracking-[.16em] text-success">Mission complete</p><h2 className="mt-2 font-display text-2xl font-bold text-foreground">R0-B0 upgrade installed</h2><p className="mt-2 text-sm leading-6 text-muted">{submission?.geAwarded ?? mission.rewardGE} GE recorded. {mission.robotUpgrade ?? "New engineering capability online."}</p><div className="mt-5 flex flex-wrap gap-3">{missionBadges.map((badge) => <StatusChip key={badge.badgeId} tone="success">{badge.name}</StatusChip>)}</div><Link href={nextMission ? `/mission/${nextMission.missionId}` : "/student"} className="mt-5 inline-flex min-h-11 items-center rounded-xl border border-brand bg-brand px-4 text-sm font-semibold text-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand">{nextMission ? "Open next mission" : "Return to mission journey"}</Link></Panel>}
         </div>
 
-        {/* Story */}
-        <section className="rounded-lg border border-purple-500/30 bg-[#111827] p-5 shadow-md">
-          <h2 className="mb-2 text-lg font-semibold text-cyan-400">
-            Story
-          </h2>
-          <p className="text-gray-300">{mission.story}</p>
-        </section>
-
-        {/* Objectives */}
-        <section className="rounded-lg border border-purple-500/30 bg-[#111827] p-5 shadow-md">
-          <h2 className="mb-3 text-lg font-semibold text-cyan-400">
-            Objectives
-          </h2>
-          <ul className="list-inside list-disc space-y-1 text-gray-300">
-            {mission.objectives.map((objective, index) => (
-              <li key={index}>{objective}</li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Required Tasks */}
-        <section className="rounded-lg border border-cyan-500/30 bg-[#111827] p-5 shadow-md">
-          <h2 className="mb-3 text-lg font-semibold text-cyan-400">
-            Required Tasks
-          </h2>
-          <div className="space-y-2">
-            {requiredTasks.map((task, index) => {
-              const isCompleted = taskStatus.requiredTasks[index] ?? false;
-              return (
-                <label
-                  key={`${mission.missionId}-req-${index}`}
-                  className={`flex items-center gap-3 rounded-md border p-2 transition-colors ${
-                    isCompleted
-                      ? "border-green-500/50 bg-green-900/20 text-green-300"
-                      : "border-gray-700 bg-gray-800/50 text-gray-300 hover:border-purple-500/50"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isCompleted}
-                    onChange={() => toggleTaskCompletion(mission.missionId, false, index)}
-                    className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-purple-500 focus:outline-none"
-                    aria-label={task}
-                  />
-                  <span className={isCompleted ? "line-through opacity-70" : ""}>
-                    {task}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Bonus Tasks */}
-        {bonusTasks.length > 0 && (
-          <section className="rounded-lg border border-purple-500/30 bg-[#111827] p-5 shadow-md">
-            <h2 className="mb-3 text-lg font-semibold text-yellow-400">
-              Bonus Tasks
-            </h2>
-            <div className="space-y-2">
-              {bonusTasks.map((task, index) => {
-                const isCompleted = taskStatus.bonusTasks[index] ?? false;
-                return (
-                  <label
-                    key={`${mission.missionId}-bon-${index}`}
-                    className={`flex items-center gap-3 rounded-md border p-2 transition-colors ${
-                      isCompleted
-                        ? "border-yellow-500/50 bg-yellow-900/20 text-yellow-300"
-                        : "border-gray-700 bg-gray-800/50 text-gray-300 hover:border-purple-500/50"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isCompleted}
-                      onChange={() => toggleTaskCompletion(mission.missionId, true, index)}
-                      className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-purple-500 focus:outline-none"
-                      aria-label={task}
-                      />
-                    <span className={isCompleted ? "line-through opacity-70" : ""}>
-                      {task}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* All tasks completed banner */}
-        {allRequiredComplete && (
-          <div className="rounded-lg border border-green-500/30 bg-green-900/10 p-4 text-center">
-            <p className="text-green-400 font-semibold">
-              All required tasks completed! You can submit your code.
-            </p>
-          </div>
-        )}
-
-        {/* Rewards */}
-        <section className="rounded-lg border border-yellow-500/30 bg-[#111827] p-5 shadow-md">
-          <h2 className="mb-3 text-lg font-semibold text-yellow-400">
-            Rewards
-          </h2>
-          <div className="mb-3 text-sm text-gray-400">
-            Galaxy Energy: <span className="font-semibold text-cyan-400">+{mission.rewardGE} GE</span>
-          </div>
-          {missionBadges.length > 0 && (
-            <div>
-              <p className="mb-2 text-sm text-gray-400">Badges Earned:</p>
-              <div className="flex flex-wrap gap-3">
-                {missionBadges.map((badge) => (
-                  <div
-                    key={badge.badgeId}
-                    className="flex items-center gap-2 rounded-lg border border-purple-500/30 bg-[#0d1225] px-3 py-2"
-                  >
-                    <span className="text-xl" title={badge.name}>
-                      {badge.icon}
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium text-gray-100">
-                        {badge.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {badge.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-
-        <MissionSubmissionForm missionId={mission.missionId} />
-
-        {/* Back link */}
-        <div className="text-center">
-          <Link
-            href="/student"
-            className="text-purple-400 underline hover:text-purple-300 focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none rounded"
-          >
-            ← Back to Dashboard
-          </Link>
-        </div>
+        <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start" aria-label="Mission progress">
+          <Panel><p className="text-xs font-bold uppercase tracking-[.16em] text-brand">Flight status</p><h2 className="mt-1 font-display text-xl font-bold text-foreground">Mission progress</h2><div className="mt-5 space-y-4"><ProgressBar value={requiredComplete} max={mission.requiredTasks.length} label="Required checks" />{mission.bonusTasks.length > 0 && <ProgressBar value={bonusComplete} max={mission.bonusTasks.length} label="Bonus checks" />}<div className="border-t border-border pt-4 text-sm"><p className="text-muted">Submission</p><p className="mt-1 font-semibold text-foreground">{submission ? submission.status === "needs_revision" ? "Revision requested" : submission.status === "reviewed" ? "Review complete" : "Awaiting review" : allRequiredComplete ? "Ready to send" : "Not ready yet"}</p></div></div></Panel>
+          <Panel className="border-brand-secondary/35"><p className="text-xs font-bold uppercase tracking-[.16em] text-brand-secondary">R0-B0 signal</p><p className="mt-3 text-sm leading-6 text-foreground">{robotMessage}</p><p className="mt-4 text-xs font-semibold text-muted">Session {mission.sessionNumber} of 12 · {mission.robotUpgrade ?? "Upgrade data loading"}</p></Panel>
+          <Panel><p className="text-xs font-bold uppercase tracking-[.16em] text-energy">Mission rewards</p><div className="mt-3 flex flex-wrap gap-2"><GalaxyEnergyChip value={mission.rewardGE} />{missionBadges.map((badge) => <StatusChip key={badge.badgeId} tone="success">{badge.name}</StatusChip>)}</div></Panel>
+        </aside>
       </div>
-    </Layout>
+    </main>
   );
 }
