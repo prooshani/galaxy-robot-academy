@@ -4,6 +4,7 @@ import { useParams, notFound } from "next/navigation";
 import { Layout } from "@galaxy/ui";
 import { badges } from "@/lib/sampleData";
 import { useMissionsContext } from "@/app/contexts/MissionsContext";
+import { useUser } from "@/app/contexts/UserContext";
 import type { Badge } from "@galaxy/types";
 import { MissionSubmissionForm } from "./MissionSubmissionForm";
 
@@ -14,6 +15,8 @@ export default function MissionDetailPage() {
   const missionId = Array.isArray(params?.missionId)
     ? params.missionId[0]
     : params?.missionId;
+
+  const { user, toggleTaskCompletion } = useUser();
 
   const mission = missions.find((m) => m.missionId === missionId);
 
@@ -27,6 +30,15 @@ export default function MissionDetailPage() {
 
   const requiredTasks = mission.requiredTasks;
   const bonusTasks = mission.bonusTasks;
+
+  const taskStatus = user.missionTasksCompleted[mission.missionId] ?? {
+    requiredTasks: requiredTasks.map(() => false),
+    bonusTasks: bonusTasks.map(() => false),
+  };
+
+  const allRequiredComplete =
+    requiredTasks.length > 0 &&
+    requiredTasks.every((_, i) => taskStatus.requiredTasks[i] ?? false);
 
   return (
     <Layout title={mission.title}>
@@ -71,25 +83,74 @@ export default function MissionDetailPage() {
           <h2 className="mb-3 text-lg font-semibold text-cyan-400">
             Required Tasks
           </h2>
-          <ol className="list-inside list-decimal space-y-2 text-gray-300">
-            {requiredTasks.map((task, index) => (
-              <li key={index}>{task}</li>
-            ))}
-          </ol>
+          <div className="space-y-2">
+            {requiredTasks.map((task, index) => {
+              const isCompleted = taskStatus.requiredTasks[index] ?? false;
+              return (
+                <label
+                  key={`${mission.missionId}-req-${index}`}
+                  className={`flex items-center gap-3 rounded-md border p-2 transition-colors ${
+                    isCompleted
+                      ? "border-green-500/50 bg-green-900/20 text-green-300"
+                      : "border-gray-700 bg-gray-800/50 text-gray-300 hover:border-purple-500/50"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isCompleted}
+                    onChange={() => toggleTaskCompletion(mission.missionId, false, index)}
+                    className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-purple-500"
+                  />
+                  <span className={isCompleted ? "line-through opacity-70" : ""}>
+                    {task}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
         </section>
 
         {/* Bonus Tasks */}
         {bonusTasks.length > 0 && (
-          <section className="rounded-lg border border-pink-500/30 bg-[#111827] p-5 shadow-md">
-            <h2 className="mb-3 text-lg font-semibold text-pink-400">
+          <section className="rounded-lg border border-purple-500/30 bg-[#111827] p-5 shadow-md">
+            <h2 className="mb-3 text-lg font-semibold text-yellow-400">
               Bonus Tasks
             </h2>
-            <ul className="list-inside list-disc space-y-1 text-gray-300">
-              {bonusTasks.map((task, index) => (
-                <li key={index}>{task}</li>
-              ))}
-            </ul>
+            <div className="space-y-2">
+              {bonusTasks.map((task, index) => {
+                const isCompleted = taskStatus.bonusTasks[index] ?? false;
+                return (
+                  <label
+                    key={`${mission.missionId}-bon-${index}`}
+                    className={`flex items-center gap-3 rounded-md border p-2 transition-colors ${
+                      isCompleted
+                        ? "border-yellow-500/50 bg-yellow-900/20 text-yellow-300"
+                        : "border-gray-700 bg-gray-800/50 text-gray-300 hover:border-purple-500/50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isCompleted}
+                      onChange={() => toggleTaskCompletion(mission.missionId, true, index)}
+                      className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-purple-500"
+                    />
+                    <span className={isCompleted ? "line-through opacity-70" : ""}>
+                      {task}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
           </section>
+        )}
+
+        {/* All tasks completed banner */}
+        {allRequiredComplete && (
+          <div className="rounded-lg border border-green-500/30 bg-green-900/10 p-4 text-center">
+            <p className="text-green-400 font-semibold">
+              All required tasks completed! You can submit your code.
+            </p>
+          </div>
         )}
 
         {/* Rewards */}

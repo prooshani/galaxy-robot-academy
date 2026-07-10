@@ -2,6 +2,11 @@ export type MissionStatus = "notStarted" | "submitted" | "reviewed" | "completed
 
 export type UserRole = "student" | "teacher";
 
+export interface TaskCompletionStatus {
+  requiredTasks: boolean[];
+  bonusTasks: boolean[];
+}
+
 export interface User {
   id: string;
   displayName: string;
@@ -10,6 +15,7 @@ export interface User {
   rankId: string;
   badgeIds: string[];
   missionStatus: Record<string, MissionStatus>;
+  missionTasksCompleted: Record<string, TaskCompletionStatus>;
   createdAt: string;
 }
 

@@ -105,6 +105,24 @@ export const user: User = {
     "mission-3": "completed",
     "mission-4": "notStarted",
   },
+  missionTasksCompleted: {
+    "mission-1": {
+      requiredTasks: [true, true, true],
+      bonusTasks: [true, false],
+    },
+    "mission-2": {
+      requiredTasks: [true, true, true],
+      bonusTasks: [false, false],
+    },
+    "mission-3": {
+      requiredTasks: [true, true, true],
+      bonusTasks: [false, false],
+    },
+    "mission-4": {
+      requiredTasks: [false, false, false],
+      bonusTasks: [false, false],
+    },
+  },
   createdAt: "2026-07-01T00:00:00Z",
 };
 

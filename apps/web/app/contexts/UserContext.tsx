@@ -9,16 +9,68 @@ import {
   type ReactNode,
 } from "react";
 import { getRankByGE } from "@galaxy/config";
-import type { User, MissionStatus, UserRole } from "@galaxy/types";
+import type { User, Mission, MissionStatus, UserRole, TaskCompletionStatus } from "@galaxy/types";
 import { user as initialUser, missions } from "@/lib/sampleData";
 
 const USER_STORAGE_KEY = "gra_userState";
+const MISSIONS_STORAGE_KEY = "gra_missions";
 const VALID_MISSION_STATUSES: MissionStatus[] = [
   "notStarted",
   "submitted",
   "reviewed",
   "completed",
 ];
+
+// Parse a single mission record from stored data (mirrors MissionsContext.parseMission)
+function parseMissionRecord(value: unknown): Mission | null {
+  if (!isRecord(value)) return null;
+  const v = value as Record<string, unknown>;
+  if (
+    typeof v.missionId !== "string" ||
+    typeof v.sessionNumber !== "number" ||
+    typeof v.title !== "string" ||
+    typeof v.story !== "string" ||
+    !Array.isArray(v.objectives) ||
+    !Array.isArray(v.requiredTasks) ||
+    !Array.isArray(v.bonusTasks) ||
+    typeof v.rewardGE !== "number" ||
+    !Array.isArray(v.badgeIds)
+  ) {
+    return null;
+  }
+  return {
+    missionId: v.missionId,
+    sessionNumber: v.sessionNumber,
+    title: v.title,
+    story: v.story,
+    objectives: v.objectives as string[],
+    requiredTasks: v.requiredTasks as string[],
+    bonusTasks: v.bonusTasks as string[],
+    rewardGE: v.rewardGE,
+    badgeIds: v.badgeIds as string[],
+  };
+}
+
+// Load all missions: merge sample data with localStorage-persisted teacher missions
+function loadAllMissions(): Mission[] {
+  if (typeof window === "undefined") return missions;
+  try {
+    const stored = window.localStorage.getItem(MISSIONS_STORAGE_KEY);
+    if (!stored) return missions;
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return missions;
+    const valid: Mission[] = [];
+    for (const item of parsed) {
+      const m = parseMissionRecord(item);
+      if (m) valid.push(m);
+    }
+    // Merge: stored missions take priority (teacher edits win), then sample missions not in storage
+    const storedIds = new Set(valid.map((m) => m.missionId));
+    return [...valid, ...missions.filter((m) => !storedIds.has(m.missionId))];
+  } catch {
+    return missions;
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -40,10 +92,74 @@ function normalizeMissionStatus(initial: User["missionStatus"]): User["missionSt
       normalized[missionId] = status;
     }
   }
-  // Ensure sample missions have a default entry
-  for (const mission of missions) {
+  // Ensure all missions (sample + teacher-created) have a default entry
+  for (const mission of loadAllMissions()) {
     if (!normalized[mission.missionId]) {
       normalized[mission.missionId] = "notStarted";
+    }
+  }
+  return normalized;
+}
+
+// Parse a single mission's task completion status from stored data
+function parseTaskCompletionStatus(value: unknown): TaskCompletionStatus | null {
+  if (!isRecord(value)) return null;
+  const v = value as Record<string, unknown>;
+  if (!Array.isArray(v.requiredTasks) || !Array.isArray(v.bonusTasks)) return null;
+  if (!v.requiredTasks.every((t: unknown) => typeof t === "boolean")) return null;
+  if (!v.bonusTasks.every((t: unknown) => typeof t === "boolean")) return null;
+  return {
+    requiredTasks: v.requiredTasks as boolean[],
+    bonusTasks: v.bonusTasks as boolean[],
+  };
+}
+
+// Parse and normalize missionTasksCompleted from stored data
+function parseMissionTasksCompleted(value: unknown): User["missionTasksCompleted"] | null {
+  if (!isRecord(value)) return null;
+  const parsed: User["missionTasksCompleted"] = {};
+  for (const [missionId, status] of Object.entries(value)) {
+    const parsedStatus = parseTaskCompletionStatus(status);
+    if (parsedStatus) {
+      parsed[missionId] = parsedStatus;
+    }
+  }
+  return parsed;
+}
+
+// Normalize missionTasksCompleted so every mission has an entry with correct array lengths
+function normalizeMissionTasksCompleted(
+  initial: User["missionTasksCompleted"],
+): User["missionTasksCompleted"] {
+  const normalized: User["missionTasksCompleted"] = {};
+  // Preserve all existing entries
+  for (const [missionId, status] of Object.entries(initial)) {
+    normalized[missionId] = status;
+  }
+  // Ensure every mission (sample + teacher-created) has an entry, sized to match current task definitions
+  for (const mission of loadAllMissions()) {
+    if (!normalized[mission.missionId]) {
+      normalized[mission.missionId] = {
+        requiredTasks: Array(mission.requiredTasks.length).fill(false),
+        bonusTasks: Array(mission.bonusTasks.length).fill(false),
+      };
+    } else {
+      // Resize arrays to match current mission definition
+      const existing = normalized[mission.missionId];
+      const reqLen = mission.requiredTasks.length;
+      const bonLen = mission.bonusTasks.length;
+      if (existing.requiredTasks.length !== reqLen || existing.bonusTasks.length !== bonLen) {
+        normalized[mission.missionId] = {
+          requiredTasks: [
+            ...existing.requiredTasks.slice(0, reqLen),
+            ...Array(Math.max(0, reqLen - existing.requiredTasks.length)).fill(false),
+          ],
+          bonusTasks: [
+            ...existing.bonusTasks.slice(0, bonLen),
+            ...Array(Math.max(0, bonLen - existing.bonusTasks.length)).fill(false),
+          ],
+        };
+      }
     }
   }
   return normalized;
@@ -74,6 +190,10 @@ function parseStoredUser(value: unknown): User | null {
     return null;
   }
 
+  const missionTasksCompleted = normalizeMissionTasksCompleted(
+    parseMissionTasksCompleted(value.missionTasksCompleted) ?? initialUser.missionTasksCompleted
+  );
+
   if (
     typeof value.id !== "string" ||
     typeof value.displayName !== "string" ||
@@ -97,6 +217,7 @@ function parseStoredUser(value: unknown): User | null {
     rankId: value.rankId,
     badgeIds: value.badgeIds,
     missionStatus,
+    missionTasksCompleted,
     createdAt: value.createdAt,
   };
 }
@@ -136,6 +257,7 @@ function loadInitialUser(): User {
 const normalizedInitial: User = {
   ...initialUser,
   missionStatus: normalizeMissionStatus(initialUser.missionStatus),
+  missionTasksCompleted: normalizeMissionTasksCompleted(initialUser.missionTasksCompleted),
 };
 
 interface UserContextValue {
@@ -143,6 +265,7 @@ interface UserContextValue {
   awardGE: (missionId: string, geAwarded: number, badgeIds?: string[]) => void;
   setMissionStatus: (missionId: string, status: MissionStatus) => void;
   setRole: (role: UserRole) => void;
+  toggleTaskCompletion: (missionId: string, isBonus: boolean, index: number) => void;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -191,8 +314,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUser((currentUser) => ({ ...currentUser, role }));
   };
 
+  const toggleTaskCompletion = (missionId: string, isBonus: boolean, index: number) => {
+    setUser((currentUser) => {
+      const existing = currentUser.missionTasksCompleted[missionId] ?? {
+        requiredTasks: [],
+        bonusTasks: [],
+      };
+      const key = isBonus ? "bonusTasks" as const : "requiredTasks" as const;
+      const newTasks = [...existing[key]];
+      // Defensive: grow array if index is beyond current length
+      while (newTasks.length <= index) {
+        newTasks.push(false);
+      }
+      newTasks[index] = !newTasks[index];
+      return {
+        ...currentUser,
+        missionTasksCompleted: {
+          ...currentUser.missionTasksCompleted,
+          [missionId]: { ...existing, [key]: newTasks },
+        },
+      };
+    });
+  };
+
   const value = useMemo(
-    () => ({ user, awardGE, setMissionStatus, setRole }),
+    () => ({ user, awardGE, setMissionStatus, setRole, toggleTaskCompletion }),
     [user]
   );
 
