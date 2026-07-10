@@ -1,256 +1,50 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Layout } from "@galaxy/ui";
-import type { Submission } from "@galaxy/types";
+import type { Mission, Submission } from "@galaxy/types";
 import { useSubmissions } from "@/app/contexts/SubmissionsContext";
 import { useUser } from "@/app/contexts/UserContext";
 import { useMissionsContext } from "@/app/contexts/MissionsContext";
 
-type SubmissionStatus = Submission["status"];
+const statusLabel = { submitted: "Pending review", reviewed: "Reviewed", needs_revision: "Needs revision" } as const;
+const statusStyle = { submitted: "border-warning/40 bg-warning/10 text-yellow-200", reviewed: "border-success/40 bg-success/10 text-green-200", needs_revision: "border-danger/40 bg-danger/10 text-red-200" } as const;
+const statusPriority = { submitted: 0, needs_revision: 1, reviewed: 2 } as const;
+const button = "inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-bold transition hover:brightness-110";
 
-const STATUS_COLORS: Record<SubmissionStatus, string> = {
-  submitted: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  reviewed: "bg-green-500/20 text-green-400 border-green-500/30",
-  needs_revision: "bg-red-500/20 text-red-400 border-red-500/30",
-};
-
-function getSubmissionCount(submissions: Submission[], missionId: string): number {
-  return submissions.filter((s) => s.missionId === missionId).length;
-}
-
-function getMissionTitle(missions: { missionId: string; title: string }[], missionId: string): string {
-  const mission = missions.find((m) => m.missionId === missionId);
-  return mission?.title ?? "Unknown Mission";
+function ReviewDialog({ submission, mission, onClose, onReview }: { submission: Submission; mission?: Mission; onClose: () => void; onReview: (ge: number, feedback: string, status: "reviewed" | "needs_revision") => void }) {
+  const dialog = useRef<HTMLDialogElement>(null); const [ge, setGe] = useState(String(submission.geAwarded)); const [feedback, setFeedback] = useState(submission.feedback ?? ""); const [outcome, setOutcome] = useState<"reviewed" | "needs_revision">("reviewed"); const [error, setError] = useState("");
+  useEffect(() => { const node = dialog.current; node?.showModal(); const cancel = (event: Event) => { event.preventDefault(); onClose(); }; node?.addEventListener("cancel", cancel); return () => node?.removeEventListener("cancel", cancel); }, [onClose]);
+  function submit() { const value = Number.parseInt(ge, 10); if (!Number.isInteger(value) || value < 0) return setError("Enter a valid non-negative GE amount."); if (outcome === "needs_revision" && !feedback.trim()) return setError("Add feedback explaining requested revision."); onReview(value, feedback.trim(), outcome); }
+  return <dialog ref={dialog} aria-labelledby="review-title" aria-describedby="review-description" className="m-auto w-[min(48rem,calc(100%-2rem))] rounded-2xl border border-[hsl(var(--strong-border))] bg-elevated p-0 text-foreground shadow-2xl backdrop:bg-canvas/80" onClose={onClose}>
+    <div className="max-h-[88vh] overflow-y-auto p-5 sm:p-7"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-brand">Submission review</p><h2 id="review-title" className="mt-2 text-2xl font-bold">{mission?.title ?? "Unknown mission"}</h2><p id="review-description" className="mt-1 text-sm text-muted">{submission.userId} · {new Date(submission.timestamp).toLocaleString()}</p></div><button type="button" onClick={onClose} className="min-h-11 min-w-11 rounded-xl border border-border" aria-label="Close review">×</button></div>
+      <section className="mt-6"><h3 className="text-sm font-semibold">Submitted code</h3><pre className="mt-2 max-h-64 overflow-auto rounded-xl border border-border bg-canvas p-4 text-sm leading-6 text-slate-200"><code>{submission.codeSnippet || "No code submitted."}</code></pre></section>
+      {error && <p role="alert" className="mt-4 rounded-xl border border-danger/50 bg-danger/10 p-3 text-sm text-red-200">{error}</p>}
+      <div className="mt-6 grid gap-5 sm:grid-cols-[11rem_1fr]"><label className="text-sm font-semibold">GE award<input type="number" min="0" value={ge} onChange={(e) => setGe(e.target.value)} className="mt-2 w-full px-4" /></label><label className="text-sm font-semibold">Feedback<textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} className="mt-2 w-full px-4 py-3" placeholder="Specific, actionable feedback" /></label></div>
+      <fieldset className="mt-5"><legend className="text-sm font-semibold">Review outcome</legend><div className="mt-2 grid gap-3 sm:grid-cols-2"><label className="flex min-h-12 items-center gap-3 rounded-xl border border-border p-3"><input type="radio" name="outcome" checked={outcome === "reviewed"} onChange={() => setOutcome("reviewed")} />Approve submission</label><label className="flex min-h-12 items-center gap-3 rounded-xl border border-border p-3"><input type="radio" name="outcome" checked={outcome === "needs_revision"} onChange={() => setOutcome("needs_revision")} />Request revision</label></div></fieldset>
+      <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" onClick={onClose} className={`${button} border border-border`}>Cancel</button><button type="button" onClick={submit} className={`${button} ${outcome === "reviewed" ? "bg-brand text-slate-950" : "bg-danger text-slate-950"}`}>{outcome === "reviewed" ? "Approve submission" : "Request revision"}</button></div>
+    </div></dialog>;
 }
 
 export default function TeacherDashboard() {
-  const { user, awardGE, setMissionStatus } = useUser();
-  const router = useRouter();
-  const { submissions, reviewSubmission } = useSubmissions();
-  const { missions, deleteMission } = useMissionsContext();
-
-  useEffect(() => {
-    if (user.role !== "teacher") {
-      router.push("/role");
-    }
-  }, [user.role, router]);
-
-  if (user.role !== "teacher") {
-    return (
-      <Layout title="Teacher Dashboard">
-        <p className="text-gray-400">
-          Access denied. Please{" "}
-          <Link href="/role" className="text-cyan-400 underline hover:text-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded">
-            select the teacher role
-          </Link>{" "}
-          to access this page.
-        </p>
-      </Layout>
-    );
-  }
-
-  const handleMarkReviewed = (submission: Submission) => {
-    const geInput = window.prompt("Enter GE awarded", "0");
-
-    if (geInput === null) {
-      return;
-    }
-
-    const geAwarded = Number.parseInt(geInput, 10);
-
-    if (!Number.isFinite(geAwarded) || geAwarded < 0) {
-      window.alert("Enter a valid non-negative GE amount.");
-      return;
-    }
-
-    const feedback = window.prompt("Enter feedback", "") ?? "";
-    const mission = missions.find((m) => m.missionId === submission.missionId);
-
-    reviewSubmission({
-      submissionId: submission.submissionId,
-      geAwarded,
-      feedback,
-    });
-
-    if (mission && geAwarded > 0) {
-      awardGE(submission.missionId, geAwarded, mission.badgeIds);
-    } else if (mission) {
-      setMissionStatus(submission.missionId, "reviewed");
-    }
-  };
-
-  return (
-    <Layout>
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-cyan-400">
-              Teacher Dashboard
-            </h1>
-            <p className="text-sm text-gray-400">
-              Monitor missions and review student submissions
-            </p>
-          </div>
-          <Link
-            href="/teacher/missions/new"
-            className="inline-flex items-center rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-300 transition-colors hover:border-cyan-400 hover:bg-cyan-500/20 hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
-            aria-label="Create New Mission"
-          >
-            ✚ Create Mission
-          </Link>
-        </div>
-
-        {/* Mission Overview */}
-        <section className="rounded-lg border border-purple-500/30 bg-[#111827] p-5 shadow-md">
-          <h2 className="mb-4 text-lg font-semibold text-gray-200">
-            Mission Overview
-          </h2>
-          <div className="overflow-x-auto rounded-lg border border-purple-500/30">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-purple-500/20 text-gray-400">
-                  <th className="pb-3 pl-2 text-left font-medium">
-                    Session
-                  </th>
-                  <th className="pb-3 text-left font-medium">Mission Title</th>
-                  <th className="pb-3 text-right font-medium pr-2">
-                    Submissions
-                  </th>
-                  <th className="pb-3 text-right font-medium pr-2">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {missions.map((mission) => {
-                  const count = getSubmissionCount(
-                    submissions,
-                    mission.missionId
-                  );
-                  return (
-                    <tr
-                      key={mission.missionId}
-                      className="border-b border-purple-500/10 transition-colors hover:bg-purple-500/5"
-                    >
-                      <td className="py-3 pl-2 text-gray-300">
-                        {mission.sessionNumber}
-                      </td>
-                      <td className="py-3 text-gray-100 font-medium">
-                        {mission.title}
-                      </td>
-                      <td className="py-3 text-right pr-2">
-                        <span className="text-cyan-400 font-semibold">
-                          {count}
-                        </span>
-                      </td>
-                      <td className="py-3 pr-2 text-right">
-                        <Link
-                          href={`/teacher/missions/${mission.missionId}/edit`}
-                          className="inline-block rounded-lg border border-cyan-500/30 bg-cyan-500/20 px-3 py-1.5 text-xs font-medium text-cyan-300 transition-colors hover:border-cyan-400 hover:text-cyan-200 mr-2 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
-                          aria-label={`Edit ${mission.title}`}
-                        >
-                          Edit
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm(`Delete mission "${mission.title}"?`)) {
-                              deleteMission(mission.missionId);
-                            }
-                          }}
-                          className="inline-block rounded-lg border border-red-500/30 bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:border-red-400 hover:text-red-200 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
-                          aria-label={`Delete ${mission.title}`}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* Submissions Table */}
-        <section className="rounded-lg border border-purple-500/30 bg-[#111827] p-5 shadow-md">
-          <h2 className="mb-4 text-lg font-semibold text-gray-200">
-            Student Submissions ({submissions.length})
-          </h2>
-          <div className="overflow-x-auto rounded-lg border border-purple-500/30">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-purple-500/20 text-gray-400">
-                  <th className="pb-3 pl-2 text-left font-medium">
-                    Mission
-                  </th>
-                  <th className="pb-3 text-left font-medium">Student</th>
-                  <th className="pb-3 text-left font-medium">Status</th>
-                  <th className="pb-3 text-right font-medium">GE</th>
-                  <th className="pb-3 text-left font-medium pr-2">
-                    Feedback
-                  </th>
-                  <th className="pb-3 text-right font-medium pr-2">
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {submissions.map((sub) => (
-                  <tr
-                    key={sub.submissionId}
-                    className="border-b border-purple-500/10 transition-colors hover:bg-purple-500/5"
-                  >
-                    <td className="py-3 pl-2 text-gray-100 font-medium">
-                      {getMissionTitle(missions, sub.missionId)}
-                    </td>
-                    <td className="py-3 text-gray-300">{sub.userId}</td>
-                    <td className="py-3">
-                      <span
-                        className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[sub.status]}`}
-                      >
-                        {sub.status}
-                      </span>
-                    </td>
-                    <td className="py-3 text-right">
-                      <span
-                        className={
-                          sub.geAwarded > 0
-                            ? "text-cyan-400 font-semibold"
-                            : "text-gray-500"
-                        }
-                      >
-                        {sub.geAwarded}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-2 text-gray-400 max-w-xs truncate">
-                      {sub.feedback ?? "—"}
-                    </td>
-                    <td className="py-3 pr-2 text-right">
-                      {sub.status === "submitted" ? (
-                        <button
-                          type="button"
-                          onClick={() => handleMarkReviewed(sub)}
-                          className="rounded-lg border border-cyan-500/30 bg-cyan-500/20 px-3 py-1.5 text-xs font-medium text-cyan-300 transition-colors hover:border-cyan-400 hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
-                          aria-label={`Mark ${getMissionTitle(missions, sub.missionId)} submission as reviewed`}
-                        >
-                          Mark Reviewed
-                        </button>
-                      ) : (
-                        <span className="text-xs text-gray-500">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-    </Layout>
-  );
+  const { user, awardGE, setMissionStatus } = useUser(); const router = useRouter(); const { submissions, reviewSubmission } = useSubmissions(); const { missions, deleteMission } = useMissionsContext(); const [reviewing, setReviewing] = useState<Submission | null>(null); const [deleting, setDeleting] = useState<Mission | null>(null);
+  useEffect(() => { if (user.role !== "teacher") router.push("/role"); }, [user.role, router]);
+  const orderedMissions = useMemo(() => [...missions].sort((a, b) => a.sessionNumber - b.sessionNumber), [missions]);
+  const orderedSubmissions = useMemo(() => [...submissions].sort((a, b) => statusPriority[a.status] - statusPriority[b.status] || Date.parse(b.timestamp) - Date.parse(a.timestamp)), [submissions]);
+  if (user.role !== "teacher") return <Layout title="Mission Control"><p>Access denied. <Link href="/role" className="text-brand underline">Select teacher role</Link>.</p></Layout>;
+  const missionFor = (id: string) => missions.find((mission) => mission.missionId === id);
+  function completeReview(ge: number, feedback: string, status: "reviewed" | "needs_revision") { if (!reviewing) return; const mission = missionFor(reviewing.missionId); reviewSubmission({ submissionId: reviewing.submissionId, geAwarded: status === "reviewed" ? ge : 0, feedback, status }); if (mission && status === "reviewed") { if (ge > 0) awardGE(reviewing.missionId, ge, mission.badgeIds); else setMissionStatus(reviewing.missionId, "reviewed"); } setReviewing(null); }
+  const metrics = [{ label: "Total missions", value: missions.length }, { label: "Pending review", value: submissions.filter((item) => item.status === "submitted").length }, { label: "Reviewed", value: submissions.filter((item) => item.status === "reviewed").length }, { label: "Revisions", value: submissions.filter((item) => item.status === "needs_revision").length }];
+  return <Layout><main className="space-y-8"><header className="surface overflow-hidden rounded-2xl p-6 sm:p-8"><div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-bold uppercase tracking-[.22em] text-brand">Teacher operations</p><h1 className="mt-2 text-3xl font-bold sm:text-4xl">Mission Control</h1><p className="mt-2 max-w-xl text-muted">Review student transmissions, manage mission order, and award Galaxy Energy.</p><p className="mt-3 text-sm text-slate-300">{user.displayName || "Teacher"} · Mission Control operator</p></div><Link href="/teacher/missions/new" className={`${button} bg-brand px-5 text-slate-950`}>+ Create mission</Link></div><dl className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">{metrics.map((metric) => <div key={metric.label} className="rounded-xl border border-border bg-canvas/55 p-4"><dt className="text-xs uppercase tracking-wider text-muted">{metric.label}</dt><dd className="mt-1 text-2xl font-bold">{metric.value}</dd></div>)}</dl></header>
+    <nav aria-label="Mission Control sections" className="flex gap-2 overflow-x-auto border-b border-border pb-3"><a href="#reviews" className="rounded-lg px-3 py-2 text-sm font-semibold text-brand">Review queue</a><a href="#missions" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 hover:text-white">Missions</a></nav>
+    <section id="reviews" aria-labelledby="reviews-title"><div className="flex items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-wider text-warning">Priority operations</p><h2 id="reviews-title" className="mt-1 text-2xl font-bold">Review queue</h2></div><span className="text-sm text-muted">{submissions.length} total</span></div>
+      {orderedSubmissions.length === 0 ? <div className="surface mt-4 rounded-2xl p-8 text-center"><h3 className="font-bold">Review queue clear</h3><p className="mt-2 text-sm text-muted">All transmissions processed. New student work will appear here.</p></div> : <><div className="mt-4 hidden overflow-x-auto rounded-2xl border border-border bg-panel/80 md:block" tabIndex={0} aria-label="Student review queue table"><table className="w-full min-w-[820px] text-sm"><caption className="sr-only">Student submissions ordered by review priority</caption><thead className="bg-command/80"><tr>{["Student", "Mission", "Submitted", "Status", "Code", "GE", "Feedback", "Action"].map((head) => <th key={head} scope="col" className="px-4 py-3 text-left text-xs uppercase tracking-wider">{head}</th>)}</tr></thead><tbody>{orderedSubmissions.map((sub) => <tr key={sub.submissionId} className="border-t border-border"><td className="px-4 py-4 font-semibold">{sub.userId}</td><td className="px-4 py-4">{missionFor(sub.missionId)?.title ?? "Unknown mission"}</td><td className="px-4 py-4 text-muted">{new Date(sub.timestamp).toLocaleDateString()}</td><td className="px-4 py-4"><span className={`rounded-full border px-2.5 py-1 text-xs ${statusStyle[sub.status]}`}>{statusLabel[sub.status]}</span></td><td className="px-4 py-4 font-mono text-xs">{sub.codeSnippet ? "Available" : "None"}</td><td className="px-4 py-4 text-energy">{sub.geAwarded} GE</td><td className="max-w-44 truncate px-4 py-4 text-muted">{sub.feedback || "No feedback yet"}</td><td className="px-4 py-4"><button type="button" onClick={() => setReviewing(sub)} className={`${button} border border-brand/40 bg-brand/10 text-brand`}>{sub.status === "submitted" ? "Review" : "View / update"}</button></td></tr>)}</tbody></table></div>
+      <div className="mt-4 grid gap-3 md:hidden">{orderedSubmissions.map((sub) => <article key={sub.submissionId} className="surface rounded-2xl p-5"><div className="flex items-start justify-between gap-3"><div><p className="font-bold">{sub.userId}</p><h3 className="mt-1 text-sm text-slate-300">{missionFor(sub.missionId)?.title ?? "Unknown mission"}</h3></div><span className={`rounded-full border px-2.5 py-1 text-xs ${statusStyle[sub.status]}`}>{statusLabel[sub.status]}</span></div><dl className="mt-4 grid grid-cols-2 gap-3 text-sm"><div><dt className="text-xs text-muted">Submitted</dt><dd>{new Date(sub.timestamp).toLocaleDateString()}</dd></div><div><dt className="text-xs text-muted">Code</dt><dd className="font-mono">{sub.codeSnippet ? "Available" : "None"}</dd></div><div><dt className="text-xs text-muted">GE award</dt><dd className="text-energy">{sub.geAwarded} GE</dd></div><div><dt className="text-xs text-muted">Feedback</dt><dd>{sub.feedback || "None yet"}</dd></div></dl><button type="button" onClick={() => setReviewing(sub)} className={`${button} mt-5 w-full bg-brand text-slate-950`}>{sub.status === "submitted" ? "Review submission" : "View / update review"}</button></article>)}</div></>}
+    </section>
+    <section id="missions" aria-labelledby="missions-title"><div className="flex items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-wider text-brand-secondary">Curriculum operations</p><h2 id="missions-title" className="mt-1 text-2xl font-bold">Mission overview</h2></div><Link href="/teacher/missions/new" className="text-sm font-semibold text-brand hover:underline">Create mission</Link></div>{orderedMissions.length === 0 ? <div className="surface mt-4 rounded-2xl p-8 text-center"><h3 className="font-bold">No missions configured</h3><p className="mt-2 text-sm text-muted">Create first mission transmission for academy.</p></div> : <div className="mt-4 grid gap-3">{orderedMissions.map((mission) => <article key={mission.missionId} className="surface grid gap-4 rounded-2xl p-5 lg:grid-cols-[5rem_1fr_auto_auto_auto] lg:items-center"><div><p className="text-xs uppercase text-muted">Session</p><p className="text-xl font-bold text-brand">{mission.sessionNumber}</p></div><div><h3 className="font-bold">{mission.title}</h3><p className="mt-1 text-sm text-muted">{mission.status ?? "Published"}</p></div><div className="text-sm"><span className="text-muted">Submissions </span><strong>{submissions.filter((sub) => sub.missionId === mission.missionId).length}</strong></div><div className="text-sm font-semibold text-energy">{mission.rewardGE} GE</div><div className="flex gap-2"><Link href={`/teacher/missions/${mission.missionId}/edit`} className={`${button} border border-border`}>Edit</Link><button type="button" onClick={() => setDeleting(mission)} className={`${button} border border-danger/50 text-red-200`}>Delete</button></div></article>)}</div>}</section>
+    {reviewing && <ReviewDialog submission={reviewing} mission={missionFor(reviewing.missionId)} onClose={() => setReviewing(null)} onReview={completeReview} />}
+    {deleting && <dialog open aria-labelledby="delete-title" className="fixed inset-0 z-50 m-auto w-[min(28rem,calc(100%-2rem))] rounded-2xl border border-danger/50 bg-elevated p-6 text-foreground shadow-2xl"><p className="text-xs font-bold uppercase tracking-wider text-danger">Destructive action</p><h2 id="delete-title" className="mt-2 text-xl font-bold">Delete “{deleting.title}”?</h2><p className="mt-2 text-sm text-muted">This removes mission from this device and cannot be undone.</p><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setDeleting(null)} className={`${button} border border-border`}>Cancel</button><button type="button" onClick={() => { deleteMission(deleting.missionId); setDeleting(null); }} className={`${button} bg-danger text-slate-950`}>Delete mission</button></div></dialog>}
+  </main></Layout>;
 }

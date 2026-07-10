@@ -124,6 +124,7 @@ interface ReviewSubmissionInput {
   submissionId: string;
   geAwarded: number;
   feedback: string;
+  status?: "reviewed" | "needs_revision";
 }
 
 interface SubmissionsContextValue {
@@ -176,7 +177,7 @@ export function SubmissionsProvider({ children }: { children: ReactNode }) {
         submission.submissionId === input.submissionId
           ? {
               ...submission,
-              status: "reviewed",
+              status: input.status ?? "reviewed",
               geAwarded: input.geAwarded,
               feedback: input.feedback,
             }
