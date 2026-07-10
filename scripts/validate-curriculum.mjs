@@ -65,6 +65,9 @@ check(
 console.log("🔍 Parsing mission definitions...");
 
 const missionIds = new Set();
+const missionSlugs = new Set();
+const sessionNumbers = new Set();
+const orderedSessions = [];
 const badgeIdsInMissions = new Set();
 
 for (const file of missionFiles) {
@@ -85,6 +88,20 @@ for (const file of missionFiles) {
     missionIds.add(id);
   }
 
+  const slug = content.match(/slug:\s*"([^"]+)"/)?.[1];
+  const sessionNumber = Number(content.match(/sessionNumber:\s*(\d+)/)?.[1]);
+  check(Boolean(slug), `Mission file ${file} missing slug`);
+  check(!slug || !missionSlugs.has(slug), `Duplicate mission slug "${slug}" in ${file}`);
+  if (slug) missionSlugs.add(slug);
+  check(Number.isInteger(sessionNumber), `Mission file ${file} missing valid sessionNumber`);
+  check(!sessionNumbers.has(sessionNumber), `Duplicate sessionNumber ${sessionNumber} in ${file}`);
+  sessionNumbers.add(sessionNumber);
+  orderedSessions.push(sessionNumber);
+
+  for (const field of ["title", "story", "objectives", "requiredTasks", "bonusTasks", "rewardGE", "badgeIds"]) {
+    check(new RegExp(`${field}:\\s*`).test(content), `Mission file ${file} missing ${field}`);
+  }
+
   // Extract badgeIds
   const badgeIdsMatch = content.match(/badgeIds:\s*\[([^\]]+)\]/);
   if (badgeIdsMatch) {
@@ -102,6 +119,10 @@ for (const file of missionFiles) {
     `Mission file ${file} should not contain "as const"`
   );
 }
+check(
+  orderedSessions.sort((a, b) => a - b).every((value, index) => value === index + 1),
+  "Mission sessions must be exactly 1 through 12",
+);
 
 // ─── 4. Parse badges ──────────────────────────────────────────────────
 console.log("🏅 Checking badge definitions...");
@@ -115,6 +136,7 @@ const badgeIdMatches = badgesContent.match(/badgeId:\s*"([^"]+)"/g) || [];
 const badgeIdsSet = new Set(
   badgeIdMatches.map((m) => m.replace(/badgeId:\s*"/, "").replace(/"/, ""))
 );
+check(badgeIdsSet.size === badgeIdMatches.length, "Badge IDs must be unique");
 
 check(
   badgeIdMatches.length === 13,
@@ -153,11 +175,17 @@ const homeworkMissionIdSet = new Set(
     (m) => m.replace(/missionId:\s*"/, "").replace(/"/, "")
   )
 );
+const homeworkIdMatches = homeworkContent.match(/homeworkId:\s*"([^"]+)"/g) || [];
+const homeworkIds = new Set(homeworkIdMatches.map((m) => m.match(/"([^"]+)"/)?.[1]));
 
 check(
   homeworkMissionIds.length === 12,
   `Expected 12 homework items, found ${homeworkMissionIds.length}`
 );
+check(homeworkIds.size === 12, "Homework IDs must be unique and total 12");
+check(homeworkMissionIdSet.size === 12, "Each mission must have exactly one homework item");
+const homeworkMinutes = [...homeworkContent.matchAll(/estimatedMinutes:\s*(\d+)/g)].map((match) => Number(match[1]));
+check(homeworkMinutes.length === 12 && homeworkMinutes.every((minutes) => minutes <= 20), "Homework estimatedMinutes must be at most 20");
 
 // Check no as const on barrel array
 check(
@@ -253,6 +281,15 @@ const manifestMissionIds =
 const manifestMissionIdSet = new Set(
   manifestMissionIds.map((m) => m.replace(/"/g, ""))
 );
+check(manifestMissionIds.length === 12, "Course manifest must contain exactly 12 mission IDs");
+check(manifestMissionIdSet.size === 12, "Course manifest mission IDs must be unique");
+check(
+  manifestMissionIds.every((quotedId, index) => quotedId.replace(/"/g, "") === `mission-${index + 1}`),
+  "Course manifest missions must be ordered mission-1 through mission-12",
+);
+const finalProjectMissionId = curriculumContent.match(/finalProjectMissionId:\s*"([^"]+)"/)?.[1];
+check(finalProjectMissionId === "mission-12", "Final project must be mission-12");
+check(Boolean(finalProjectMissionId && missionIds.has(finalProjectMissionId)), "Final project mission ID must resolve");
 
 for (const id of manifestMissionIdSet) {
   check(

@@ -15,6 +15,7 @@ import { canonicalMissions } from "@/lib/academyContent";
 
 const USER_STORAGE_KEY = "gra_userState";
 const MISSIONS_STORAGE_KEY = "gra_missions";
+const DELETED_MISSIONS_STORAGE_KEY = "gra_deletedMissionIds";
 const VALID_MISSION_STATUSES: MissionStatus[] = [
   "notStarted",
   "submitted",
@@ -90,12 +91,20 @@ function loadAllMissions(): Mission[] {
       const m = parseMissionRecord(item);
       if (m) valid.push(m);
     }
-    // Merge: stored missions take priority (teacher edits win), then canonical missions not in storage
+    const deletedIds = parseDeletedMissionIds(window.localStorage.getItem(DELETED_MISSIONS_STORAGE_KEY));
     const storedIds = new Set(valid.map((m) => m.missionId));
-    return [...valid, ...canonicalMissions.filter((m) => !storedIds.has(m.missionId))];
+    return [...valid, ...canonicalMissions.filter((m) => !storedIds.has(m.missionId) && !deletedIds.has(m.missionId))];
   } catch {
     return canonicalMissions;
   }
+}
+
+function parseDeletedMissionIds(value: string | null): Set<string> {
+  if (!value) return new Set();
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : []);
+  } catch { return new Set(); }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -6,7 +6,8 @@
     "typecheck": "cd apps/web && ./node_modules/.bin/tsc --noEmit",
     "build": "cd apps/web && npx next build",
     "dev": "cd apps/web && npx next dev",
-    "validate-curriculum": "node scripts/validate-curriculum.mjs"
+    "validate-curriculum": "node scripts/validate-curriculum.mjs",
+    "test": "node --test scripts/*.test.mjs"
   },
   "engines": {
     "node": ">=18"

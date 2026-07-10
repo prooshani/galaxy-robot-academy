@@ -22,7 +22,8 @@ export default function RoleSelectionPage() {
         <button
           type="button"
           onClick={() => handleSelect("student")}
-          className="w-full max-w-xs rounded-lg border border-cyan-500/30 bg-[#111827] p-8 text-center shadow-md transition-colors hover:border-cyan-400 hover:shadow-cyan-950/30"
+          className="w-full max-w-xs rounded-lg border border-cyan-500/30 bg-[#111827] p-8 text-center shadow-md transition-colors hover:border-cyan-400 hover:shadow-cyan-950/30 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+          aria-label="Select student role"
         >
           <span className="mb-4 block text-4xl">🚀</span>
           <span className="block text-lg font-semibold text-gray-100">
@@ -35,7 +36,8 @@ export default function RoleSelectionPage() {
         <button
           type="button"
           onClick={() => handleSelect("teacher")}
-          className="w-full max-w-xs rounded-lg border border-purple-500/30 bg-[#111827] p-8 text-center shadow-md transition-colors hover:border-purple-400 hover:shadow-purple-950/30"
+          className="w-full max-w-xs rounded-lg border border-purple-500/30 bg-[#111827] p-8 text-center shadow-md transition-colors hover:border-purple-400 hover:shadow-purple-950/30 focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none"
+          aria-label="Select teacher role"
         >
           <span className="mb-4 block text-4xl">👩‍🏫</span>
           <span className="block text-lg font-semibold text-gray-100">

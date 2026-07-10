@@ -13,23 +13,23 @@ export const mission5 = {
   story:
     "R0-B0 detects a repeating pattern in the cosmic background noise. Decode the signal by identifying and extending the pattern.",
   summary:
-    "Identify repeating patterns in data, use nested loops, and create pattern-matching logic.",
+    "Use a loop to repeat a short sequence.",
   learningObjectives: [
-    "Identify repeating patterns",
-    "Use nested loops",
-    "Create pattern-matching logic",
+    "Recognize repetition",
+    "Write a simple loop",
+    "Change the number of repeats",
   ],
   objectives: [
-    "Identify repeating patterns",
-    "Use nested loops",
-    "Create pattern-matching logic",
+    "Recognize repetition",
+    "Write a simple loop",
+    "Change the number of repeats",
   ],
   requiredTasks: [
     "Analyze the signal pattern",
-    "Write a nested loop to reproduce it",
+    "Write a loop to reproduce it",
     "Test with different signal lengths",
   ],
-  bonusTasks: ["Detect when a pattern breaks", "Add a visual indicator for pattern changes"],
+  bonusTasks: ["Change the repeat count", "Add a second repeated message"],
   rewardGE: 100,
   badgeIds: ["badge-pattern"],
   prerequisites: ["mission-4"],

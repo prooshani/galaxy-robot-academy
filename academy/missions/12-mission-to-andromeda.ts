@@ -13,24 +13,24 @@ export const mission12 = {
   story:
     "The final mission! R0-B0 must combine all learned skills to navigate to the Andromeda galaxy. This is the ultimate test of everything you've learned.",
   summary:
-    "Combine all skills — loops, conditionals, functions, modules, data management, events, and state — into one final project.",
+    "Combine selected course skills into a small final robot adventure.",
   learningObjectives: [
     "Combine all learned skills into one project",
-    "Design and implement a complete system",
+    "Plan and build a complete small program",
     "Demonstrate mastery of course concepts",
   ],
   objectives: [
     "Combine all learned skills into one project",
-    "Design and implement a complete system",
+    "Plan and build a complete small program",
     "Demonstrate mastery of course concepts",
   ],
   requiredTasks: [
-    "Design the overall system architecture",
+    "Write a short program plan",
     "Implement core navigation logic",
-    "Add event handling and error recovery",
+    "Add one random event",
     "Create a final report or presentation",
   ],
-  bonusTasks: ["Add a simulation visualization", "Implement a replay feature"],
+  bonusTasks: ["Add one creative ending", "Let the player try again"],
   rewardGE: 300,
   badgeIds: ["badge-final", "badge-andromeda"],
   prerequisites: ["mission-11"],

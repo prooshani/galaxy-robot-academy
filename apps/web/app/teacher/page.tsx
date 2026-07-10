@@ -30,7 +30,7 @@ export default function TeacherDashboard() {
   const { user, awardGE, setMissionStatus } = useUser();
   const router = useRouter();
   const { submissions, reviewSubmission } = useSubmissions();
-  const { missions } = useMissionsContext();
+  const { missions, deleteMission } = useMissionsContext();
 
   useEffect(() => {
     if (user.role !== "teacher") {
@@ -43,9 +43,9 @@ export default function TeacherDashboard() {
       <Layout title="Teacher Dashboard">
         <p className="text-gray-400">
           Access denied. Please{" "}
-          <a href="/role" className="text-cyan-400 underline">
+          <Link href="/role" className="text-cyan-400 underline hover:text-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded">
             select the teacher role
-          </a>{" "}
+          </Link>{" "}
           to access this page.
         </p>
       </Layout>
@@ -83,7 +83,7 @@ export default function TeacherDashboard() {
   };
 
   return (
-    <Layout title="Teacher Dashboard">
+    <Layout>
       <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -97,7 +97,8 @@ export default function TeacherDashboard() {
           </div>
           <Link
             href="/teacher/missions/new"
-            className="inline-flex items-center rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-300 transition-colors hover:border-cyan-400 hover:bg-cyan-500/20 hover:text-cyan-200"
+            className="inline-flex items-center rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-300 transition-colors hover:border-cyan-400 hover:bg-cyan-500/20 hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+            aria-label="Create New Mission"
           >
             ✚ Create Mission
           </Link>
@@ -108,7 +109,7 @@ export default function TeacherDashboard() {
           <h2 className="mb-4 text-lg font-semibold text-gray-200">
             Mission Overview
           </h2>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border border-purple-500/30">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-purple-500/20 text-gray-400">
@@ -118,6 +119,9 @@ export default function TeacherDashboard() {
                   <th className="pb-3 text-left font-medium">Mission Title</th>
                   <th className="pb-3 text-right font-medium pr-2">
                     Submissions
+                  </th>
+                  <th className="pb-3 text-right font-medium pr-2">
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -143,6 +147,27 @@ export default function TeacherDashboard() {
                           {count}
                         </span>
                       </td>
+                      <td className="py-3 pr-2 text-right">
+                        <Link
+                          href={`/teacher/missions/${mission.missionId}/edit`}
+                          className="inline-block rounded-lg border border-cyan-500/30 bg-cyan-500/20 px-3 py-1.5 text-xs font-medium text-cyan-300 transition-colors hover:border-cyan-400 hover:text-cyan-200 mr-2 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                          aria-label={`Edit ${mission.title}`}
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Delete mission "${mission.title}"?`)) {
+                              deleteMission(mission.missionId);
+                            }
+                          }}
+                          className="inline-block rounded-lg border border-red-500/30 bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:border-red-400 hover:text-red-200 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
+                          aria-label={`Delete ${mission.title}`}
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -156,7 +181,7 @@ export default function TeacherDashboard() {
           <h2 className="mb-4 text-lg font-semibold text-gray-200">
             Student Submissions ({submissions.length})
           </h2>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border border-purple-500/30">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-purple-500/20 text-gray-400">
@@ -210,7 +235,8 @@ export default function TeacherDashboard() {
                         <button
                           type="button"
                           onClick={() => handleMarkReviewed(sub)}
-                          className="rounded-lg border border-cyan-500/30 bg-cyan-500/20 px-3 py-1.5 text-xs font-medium text-cyan-300 transition-colors hover:border-cyan-400 hover:text-cyan-200"
+                          className="rounded-lg border border-cyan-500/30 bg-cyan-500/20 px-3 py-1.5 text-xs font-medium text-cyan-300 transition-colors hover:border-cyan-400 hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                          aria-label={`Mark ${getMissionTitle(missions, sub.missionId)} submission as reviewed`}
                         >
                           Mark Reviewed
                         </button>

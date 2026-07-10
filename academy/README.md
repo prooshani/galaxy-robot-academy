@@ -83,6 +83,12 @@ The web app consumes academy content through the adapter at `apps/web/lib/academ
 import { canonicalMissions, canonicalBadges, canonicalHomework } from "@/lib/academyContent";
 ```
 
+Application components must never embed curriculum definitions. They consume
+structured content through the adapter. The `materials/` directory contains
+teacher-facing lesson assets and supporting prose; it may expand a structured
+mission, but it is not an alternative canonical catalog and must reference the
+stable mission ID it supports.
+
 ## Validation
 
 Run structural validation before committing:

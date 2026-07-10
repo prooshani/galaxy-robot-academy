@@ -10,6 +10,7 @@ interface NavLink {
 }
 
 const navLinks: NavLink[] = [
+  { href: "/", label: "Home" },
   { href: "/student", label: "Student" },
   { href: "/badges", label: "Badges" },
   { href: "/teacher", label: "Teacher" },
@@ -30,7 +31,11 @@ export function NavBar() {
   return (
     <nav className="border-b border-purple-900/50 bg-[#080c18]/95 text-gray-100 shadow-lg shadow-purple-950/20">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <Link href="/student" className="group inline-flex items-center gap-2">
+        <Link
+          href="/"
+          className="group inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded-lg p-1"
+          aria-label="Galaxy Robot Academy home"
+        >
           <span className="text-lg" aria-hidden="true">
             🚀
           </span>
@@ -52,7 +57,7 @@ export function NavBar() {
                   active
                     ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-200 shadow-sm shadow-cyan-950/40"
                     : "border-purple-500/20 bg-[#111827] text-gray-300 hover:border-purple-400/50 hover:text-purple-100"
-                }`}
+                } focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none`}
               >
                 {link.label}
               </Link>

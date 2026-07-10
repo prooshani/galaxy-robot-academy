@@ -1,5 +1,3 @@
-module.exports = [
-  {
-    ignores: [".next/**", "node_modules/**"],
-  },
+export default [
+  { ignores: [".next/**", "node_modules/**", "next-env.d.ts"] },
 ];

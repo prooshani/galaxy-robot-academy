@@ -8,30 +8,30 @@ export const mission3 = {
   missionId: "mission-3",
   sessionNumber: 3,
   slug: "communication-systems",
-  title: "Maze Navigator",
+  title: "Communication Systems",
   shortTitle: "Communication Systems",
   story:
-    "A maze of asteroids blocks the path home. Program R0-B0 to find the way through using conditionals to make decisions at each intersection.",
+    "Mission Control needs R0-B0 to ask an engineer for a call sign and destination before launch.",
   summary:
-    "Use conditionals to make decisions, handle multiple paths, and think ahead to navigate through obstacles.",
+    "Read keyboard input and use it in a friendly response.",
   learningObjectives: [
-    "Use conditionals to make decisions",
-    "Handle multiple paths",
-    "Think ahead",
+    "Ask a clear question",
+    "Store user input",
+    "Print a response using the input",
   ],
   objectives: [
-    "Use conditionals to make decisions",
-    "Handle multiple paths",
-    "Think ahead",
+    "Ask a clear question",
+    "Store user input",
+    "Print a response using the input",
   ],
   requiredTasks: [
-    "Write an if/else statement",
-    "Handle at least 2 branches",
-    "Test with different inputs",
+    "Ask for an engineer name",
+    "Ask for a destination",
+    "Print a launch message",
   ],
-  bonusTasks: ["Add a counter for steps taken", "Handle the 'no path' case"],
+  bonusTasks: ["Ask one more question", "Personalize the final message"],
   rewardGE: 100,
-  badgeIds: ["badge-logic"],
+  badgeIds: ["badge-start"],
   prerequisites: ["mission-2"],
   estimatedMinutes: 55,
   status: "published",
@@ -39,5 +39,5 @@ export const mission3 = {
   spaceFact:
     "Light from the Sun takes about 8 minutes to reach Earth, but 40 minutes to reach Saturn.",
   submissionInstructions:
-    "Submit your conditional navigation code. Demonstrate handling at least 2 different path decisions.",
+    "Submit the short program that asks questions and prints the answers.",
 };

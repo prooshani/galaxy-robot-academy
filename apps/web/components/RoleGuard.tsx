@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useUser } from "@/app/contexts/UserContext";
 
-const PUBLIC_PATHS = ["/role"];
+const PUBLIC_PATHS = ["/role", "/"];
 
 export function RoleGuard({ children }: { children: React.ReactNode }) {
   const { user } = useUser();

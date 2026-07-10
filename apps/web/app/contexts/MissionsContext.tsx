@@ -12,6 +12,13 @@ import type { Mission } from "@galaxy/types";
 import { canonicalMissions } from "@/lib/academyContent";
 
 const MISSIONS_STORAGE_KEY = "gra_missions";
+const DELETED_MISSIONS_STORAGE_KEY = "gra_deletedMissionIds";
+const LEGACY_FIXTURE_TITLES: Readonly<Record<string, string>> = {
+  "mission-1": "Hello, Galaxy!",
+  "mission-2": "Robot Dance Party",
+  "mission-3": "Maze Navigator",
+  "mission-4": "Signal Booster",
+};
 
 function parseMission(value: unknown): Mission | null {
   if (typeof value !== "object" || value === null) return null;
@@ -89,21 +96,32 @@ function loadInitialMissions(): Mission[] {
     const parsed = parseStoredMissions(JSON.parse(stored));
     if (!parsed) return canonicalMissions;
 
-    // Merge: ensure all canonical missions exist, preserve user-created ones
-    const canonicalIds = new Set(canonicalMissions.map((m) => m.missionId));
-    const userMissions = parsed.filter((m) => !canonicalIds.has(m.missionId));
-
-    // If localStorage only contains canonical missions (e.g. old mission-1..4),
-    // return fresh canonical data to ensure content is up to date.
-    if (userMissions.length === 0 && parsed.every((m) => canonicalIds.has(m.missionId))) {
-      return canonicalMissions;
-    }
-
-    return [...canonicalMissions, ...userMissions];
+    const deletedIds = parseDeletedMissionIds(window.localStorage.getItem(DELETED_MISSIONS_STORAGE_KEY));
+    const storedById = new Map(parsed.map((mission) => [mission.missionId, mission]));
+    const migratedCanonical = canonicalMissions
+      .filter((mission) => !deletedIds.has(mission.missionId))
+      .map((mission) => {
+        const storedMission = storedById.get(mission.missionId);
+        if (!storedMission) return mission;
+        storedById.delete(mission.missionId);
+        const isUntouchedLegacyFixture =
+          LEGACY_FIXTURE_TITLES[storedMission.missionId] === storedMission.title &&
+          storedMission.slug === undefined && storedMission.status === undefined;
+        return isUntouchedLegacyFixture ? mission : storedMission;
+      });
+    return [...migratedCanonical, ...storedById.values()];
   } catch {
     // Ignore storage/parsing errors and fall back to canonical missions.
     return canonicalMissions;
   }
+}
+
+function parseDeletedMissionIds(value: string | null): Set<string> {
+  if (!value) return new Set();
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : []);
+  } catch { return new Set(); }
 }
 
 const MissionsContext = createContext<{
@@ -143,6 +161,11 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
 
   const deleteMission = (missionId: string) => {
     setMissions((prev) => prev.filter((m) => m.missionId !== missionId));
+    try {
+      const deletedIds = parseDeletedMissionIds(window.localStorage.getItem(DELETED_MISSIONS_STORAGE_KEY));
+      deletedIds.add(missionId);
+      window.localStorage.setItem(DELETED_MISSIONS_STORAGE_KEY, JSON.stringify([...deletedIds]));
+    } catch { /* Keep in-memory deletion usable when storage is unavailable. */ }
   };
 
   const value = useMemo(() => ({ missions, addMission, updateMission, deleteMission }), [missions]);

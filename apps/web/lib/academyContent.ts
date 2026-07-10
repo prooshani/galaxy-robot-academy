@@ -21,27 +21,46 @@ import { courseManifest } from "@academy/curriculum/galaxy-robot-academy";
  * Increment this when the canonical content changes in a way that
  * requires re-seeding or migration of user data.
  */
-export const ACADEMY_CONTENT_VERSION = 1;
+export const ACADEMY_CONTENT_VERSION: number = courseManifest.version;
 
 /**
  * All canonical missions as a plain array (not readonly).
  */
-export const canonicalMissions: Mission[] = academyMissions as unknown as Mission[];
+export const canonicalMissions: Mission[] = academyMissions.map((mission) => ({
+  ...mission,
+  status: parseContentStatus(mission.status),
+}));
 
 /**
  * All canonical badges as a plain array (not readonly).
  */
-export const canonicalBadges: Badge[] = academyBadges as unknown as Badge[];
+export const canonicalBadges: Badge[] = academyBadges.map((badge) => ({ ...badge }));
 
 /**
  * All homework assignments as a plain array (not readonly).
  */
-export const canonicalHomework: HomeworkMission[] = academyHomework as unknown as HomeworkMission[];
+export const canonicalHomework: HomeworkMission[] = academyHomework.map((homework) => ({
+  ...homework,
+  status: parseContentStatus(homework.status),
+}));
 
 /**
  * The course manifest.
  */
-export const canonicalCourse: Course = courseManifest as unknown as Course;
+export const canonicalCourse: Course = {
+  ...courseManifest,
+  status: parseCourseStatus(courseManifest.status),
+};
+
+function parseContentStatus(value: string): NonNullable<Mission["status"]> {
+  if (value === "draft" || value === "review" || value === "published" || value === "archived") return value;
+  throw new Error(`Invalid academy content status: ${value}`);
+}
+
+function parseCourseStatus(value: string): Course["status"] {
+  if (value === "draft" || value === "active" || value === "archived") return value;
+  throw new Error(`Invalid academy course status: ${value}`);
+}
 
 /**
  * Lookup a mission by its missionId.
@@ -61,7 +80,7 @@ export function getMissionBySlug(slug: string): Mission | undefined {
  * Return all canonical missions ordered by session number.
  */
 export function getOrderedMissions(): Mission[] {
-  return canonicalMissions;
+  return [...canonicalMissions].sort((a, b) => a.sessionNumber - b.sessionNumber);
 }
 
 /**
@@ -75,7 +94,7 @@ export function getBadgeById(id: string): Badge | undefined {
  * Return all canonical badges.
  */
 export function getAllBadges(): Badge[] {
-  return canonicalBadges;
+  return [...canonicalBadges];
 }
 
 /**
@@ -89,5 +108,5 @@ export function getHomeworkByMissionId(missionId: string): HomeworkMission | und
  * Get all homework assignments.
  */
 export function getAllHomework(): HomeworkMission[] {
-  return canonicalHomework;
+  return [...canonicalHomework];
 }
