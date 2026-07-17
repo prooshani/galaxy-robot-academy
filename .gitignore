@@ -48,3 +48,4 @@ next-env.d.ts
 # Lockfiles (keep pnpm-lock.yaml, ignore npm)
 package-lock.json
 yarn.lock
+.vercel
