@@ -2,18 +2,23 @@
 
 import {
   createContext,
+  useCallback,
   useEffect,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { getRankByGE } from "@galaxy/config";
-import type { User, Mission, MissionStatus, UserRole, TaskCompletionStatus } from "@galaxy/types";
+import { onAuthStateChanged } from "firebase/auth";
+import type { User, Mission, MissionStatus, QuizProgress, TaskCompletionStatus, UserProfile } from "@galaxy/types";
 import { user as initialUser } from "@/lib/sampleData";
-import { canonicalMissions } from "@/lib/academyContent";
+import { canonicalMissions, normalizeBadgeId, normalizeMissionId } from "@/lib/academyContent";
+import { auth } from "@/lib/firebase/client";
+import { signOutUser } from "@/lib/firebase/auth";
 
-const USER_STORAGE_KEY = "gra_userState";
+// Missions are still merged from canonical content + teacher edits in
+// localStorage; per-user progress now lives in Firestore (the profile doc).
 const MISSIONS_STORAGE_KEY = "gra_missions";
 const DELETED_MISSIONS_STORAGE_KEY = "gra_deletedMissionIds";
 const VALID_MISSION_STATUSES: MissionStatus[] = [
@@ -121,10 +126,11 @@ function isMissionStatus(value: unknown): value is MissionStatus {
 // Normalize missionStatus so every mission has an entry, defaulting to "notStarted"
 function normalizeMissionStatus(initial: User["missionStatus"]): User["missionStatus"] {
   const normalized: Record<string, MissionStatus> = {};
-  // Preserve all existing entries (including dynamically-created missions)
+  // Preserve all existing entries (including dynamically-created missions),
+  // migrating legacy mission IDs (mission-1 → mission-01) at read time.
   for (const [missionId, status] of Object.entries(initial)) {
     if (isMissionStatus(status)) {
-      normalized[missionId] = status;
+      normalized[normalizeMissionId(missionId)] = status;
     }
   }
   // Ensure all missions (sample + teacher-created) have a default entry
@@ -167,9 +173,9 @@ function normalizeMissionTasksCompleted(
   initial: User["missionTasksCompleted"],
 ): User["missionTasksCompleted"] {
   const normalized: User["missionTasksCompleted"] = {};
-  // Preserve all existing entries
+  // Preserve all existing entries, migrating legacy mission IDs at read time
   for (const [missionId, status] of Object.entries(initial)) {
-    normalized[missionId] = status;
+    normalized[normalizeMissionId(missionId)] = status;
   }
   // Ensure every mission (sample + teacher-created) has an entry, sized to match current task definitions
   for (const mission of loadAllMissions()) {
@@ -250,43 +256,50 @@ function parseStoredUser(value: unknown): User | null {
         : null,
     totalGE: value.totalGE,
     rankId: value.rankId,
-    badgeIds: value.badgeIds,
+    badgeIds: Array.from(new Set(value.badgeIds.map((id) => normalizeBadgeId(id as string)))),
     missionStatus,
     missionTasksCompleted,
+    quizzes: {},
     createdAt: value.createdAt,
   };
 }
 
-function clearStoredUser(): void {
-  try {
-    window.localStorage.removeItem(USER_STORAGE_KEY);
-  } catch {
-    // Ignore cleanup failures and fall back to sample data.
+function parseQuizzes(value: unknown): Record<string, QuizProgress> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
+  const parsed: Record<string, QuizProgress> = {};
+  for (const [quizId, progress] of Object.entries(value as Record<string, unknown>)) {
+    if (!isRecord(progress)) continue;
+    const p = progress as Record<string, unknown>;
+    parsed[quizId] = {
+      attempts: typeof p.attempts === "number" ? p.attempts : 0,
+      bestScore: typeof p.bestScore === "number" ? p.bestScore : 0,
+      passed: p.passed === true,
+      geAwarded: p.geAwarded === true,
+      lastAttemptAt: typeof p.lastAttemptAt === "string" ? p.lastAttemptAt : null,
+    };
   }
+  return parsed;
 }
 
-function loadInitialUser(): User {
-  if (typeof window === "undefined") {
-    return normalizedInitial;
-  }
-
-  try {
-    const storedUser = window.localStorage.getItem(USER_STORAGE_KEY);
-    if (!storedUser) {
-      return normalizedInitial;
-    }
-
-    const parsedUser = parseStoredUser(JSON.parse(storedUser) as unknown);
-    if (parsedUser) {
-      return parsedUser;
-    }
-
-    clearStoredUser();
-  } catch {
-    clearStoredUser();
-  }
-
-  return normalizedInitial;
+// Map the authoritative Firestore profile into the app's User shape. Only
+// students carry gamification/progress; teachers & admins get neutral values.
+function profileToUser(p: UserProfile): User {
+  const s = p.role === "student" ? p : null;
+  return {
+    id: p.uid,
+    displayName: p.displayName ?? "Cadet",
+    photoURL: p.photoURL ?? null,
+    avatarId: p.avatarId ?? null,
+    suit: p.suit ?? null,
+    role: p.role,
+    totalGE: s?.gamification?.totalGE ?? 0,
+    rankId: s?.gamification?.rankId ?? "cadet",
+    badgeIds: Array.from(new Set((s?.gamification?.badgeIds ?? []).map(normalizeBadgeId))),
+    missionStatus: normalizeMissionStatus(s?.progress?.missionStatus ?? {}),
+    missionTasksCompleted: normalizeMissionTasksCompleted(s?.progress?.missionTasksCompleted ?? {}),
+    quizzes: parseQuizzes(s?.progress?.quizzes ?? {}),
+    createdAt: p.createdAt ?? new Date().toISOString(),
+  };
 }
 
 const normalizedInitial: User = {
@@ -295,45 +308,134 @@ const normalizedInitial: User = {
   missionTasksCompleted: normalizeMissionTasksCompleted(initialUser.missionTasksCompleted),
 };
 
+// Signed-out placeholder. `role: null` is what RoleGuard keys off to redirect.
+const anonymousUser: User = { ...normalizedInitial, id: "", displayName: "", photoURL: null, role: null };
+
 interface UserContextValue {
   user: User;
-  awardGE: (missionId: string, geAwarded: number, badgeIds?: string[]) => void;
+  // "loading" until the Firebase session resolves; then "authed" or "anon".
+  authStatus: "loading" | "authed" | "anon";
   setMissionStatus: (missionId: string, status: MissionStatus) => void;
-  setRole: (role: UserRole) => void;
   toggleTaskCompletion: (missionId: string, isBonus: boolean, index: number) => void;
+  // Re-pull identity/avatar from Firestore (e.g. after the profile page saves).
+  refreshProfile: () => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User>(loadInitialUser);
+  const [user, setUser] = useState<User>(anonymousUser);
+  const [authStatus, setAuthStatus] = useState<"loading" | "authed" | "anon">("loading");
+  const [uid, setUid] = useState<string | null>(null);
+  // Skip the persist effect for state changes that came FROM Firestore
+  // (hydration / refresh), so we don't immediately write back what we read.
+  const skipNextSave = useRef(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-    } catch {
-      // Ignore storage failures so context state remains usable.
+  const clearSaveTimer = useCallback(() => {
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
     }
-  }, [user]);
+  }, []);
 
-  const awardGE = (missionId: string, geAwarded: number, badgeIds?: string[]) => {
-    setUser((currentUser) => {
-      const totalGE = currentUser.totalGE + geAwarded;
-      const newBadgeIds = Array.from(
-        new Set([...currentUser.badgeIds, ...(badgeIds ?? [])])
-      );
-      return {
-        ...currentUser,
-        totalGE,
-        rankId: getRankByGE(totalGE),
-        badgeIds: newBadgeIds,
-        missionStatus: {
-          ...currentUser.missionStatus,
-          [missionId]: "completed" as const,
-        },
+  const fetchProfile = useCallback(async (): Promise<UserProfile | null> => {
+    try {
+      const res = await fetch("/api/user/profile", { cache: "no-store" });
+      return res.ok ? ((await res.json()) as UserProfile) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Bridge Firebase auth state -> app user, hydrating progress from Firestore.
+  // If the profile fetch fails we stay in "loading" and retry — we never seed
+  // a real account from sample data (which the progress sync could then
+  // persist) and never guess the role.
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (fbUser) => {
+      if (retryTimer.current) {
+        clearTimeout(retryTimer.current);
+        retryTimer.current = null;
+      }
+      if (!fbUser) {
+        clearSaveTimer();
+        setUid(null);
+        setUser(anonymousUser);
+        setAuthStatus("anon");
+        return;
+      }
+      const hydrate = async () => {
+        const profile = await fetchProfile();
+        // The user may have signed out (or switched) while we were fetching.
+        if (auth.currentUser?.uid !== fbUser.uid) return;
+        if (!profile) {
+          retryTimer.current = setTimeout(() => {
+            void hydrate();
+          }, 3000);
+          return;
+        }
+        skipNextSave.current = true;
+        setUid(fbUser.uid);
+        setUser(profileToUser(profile));
+        setAuthStatus("authed");
       };
+      setAuthStatus("loading");
+      void hydrate();
     });
-  };
+    return () => {
+      unsub();
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+    };
+  }, [fetchProfile, clearSaveTimer]);
+
+  // Debounced sync of mission progress to Firestore (students only).
+  // Gamification (GE, badges, rank) is written ONLY server-side — by quiz
+  // attempts and teacher reviews — so the client never overwrites awards.
+  useEffect(() => {
+    if (authStatus !== "authed" || !uid || user.role !== "student") return;
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
+    }
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      saveTimer.current = null;
+      void fetch("/api/user/progress", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          progress: {
+            missionStatus: user.missionStatus,
+            missionTasksCompleted: user.missionTasksCompleted,
+          },
+        }),
+      }).catch(() => {
+        // Best-effort sync; local state stays authoritative for this session.
+      });
+    }, 600);
+    // Clear the pending save on re-render/unmount so a stale PATCH can never
+    // fire after fresher state (e.g. a server refresh) has landed.
+    return clearSaveTimer;
+  }, [user, uid, authStatus, clearSaveTimer]);
+
+  const refreshProfile = useCallback(async () => {
+    const profile = await fetchProfile();
+    if (profile) {
+      // Drop any queued stale save before adopting the server truth.
+      clearSaveTimer();
+      skipNextSave.current = true;
+      setUser(profileToUser(profile));
+    }
+  }, [fetchProfile, clearSaveTimer]);
+
+  const signOut = useCallback(async () => {
+    clearSaveTimer();
+    await signOutUser();
+    // onAuthStateChanged will fire and reset to the anonymous user.
+  }, [clearSaveTimer]);
 
   const setMissionStatus = (missionId: string, status: MissionStatus) => {
     setUser((currentUser) => ({
@@ -343,10 +445,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         [missionId]: status,
       },
     }));
-  };
-
-  const setRole = (role: UserRole) => {
-    setUser((currentUser) => ({ ...currentUser, role }));
   };
 
   const toggleTaskCompletion = (missionId: string, isBonus: boolean, index: number) => {
@@ -373,8 +471,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(
-    () => ({ user, awardGE, setMissionStatus, setRole, toggleTaskCompletion }),
-    [user]
+    () => ({ user, authStatus, setMissionStatus, toggleTaskCompletion, refreshProfile, signOut }),
+    [user, authStatus, refreshProfile, signOut]
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

@@ -1,34 +1,44 @@
 /**
  * Canonical badge definitions.
  *
- * Contains all 13 badges referenced by the 12 mission definitions.
- * The original 4 badge IDs are preserved exactly for localStorage
- * backward compatibility.
+ * Contains all badges referenced by the 12 mission definitions.
+ * Sessions 01–04 use the approved badge IDs (first-contact,
+ * memory-engineer, signal-operator, logic-navigator). Legacy IDs from
+ * earlier releases (badge-start, badge-logic) are migrated at read time
+ * via LEGACY_BADGE_ID_MAP in the web adapter.
  *
  * This file is NOT part of the pnpm workspace — plain object literals only.
  */
 
-export const badgeStart = {
-  badgeId: "badge-start",
+export const badgeFirstContact = {
+  badgeId: "first-contact",
   name: "First Contact",
   category: "milestone",
-  description: "Completed your first mission and sent your first signal.",
+  description: "Installed the Speech Module and sent your first signal to the Galaxy Council.",
   icon: "📡",
 };
 
-export const badgeLoop = {
-  badgeId: "badge-loop",
-  name: "Loop Master",
+export const badgeMemoryEngineer = {
+  badgeId: "memory-engineer",
+  name: "Memory Engineer",
   category: "skill",
-  description: "Mastered the art of repeating actions with loops.",
-  icon: "🔄",
+  description: "Installed the Memory Core and stored R0-B0's profile in clear variables.",
+  icon: "🧠",
 };
 
-export const badgeLogic = {
-  badgeId: "badge-logic",
-  name: "Maze Runner",
+export const badgeSignalOperator = {
+  badgeId: "signal-operator",
+  name: "Signal Operator",
   category: "skill",
-  description: "Navigated a complex maze using conditionals.",
+  description: "Opened the Communication Channel with input(), int(), and f-strings.",
+  icon: "🛰️",
+};
+
+export const badgeLogicNavigator = {
+  badgeId: "logic-navigator",
+  name: "Logic Navigator",
+  category: "skill",
+  description: "Activated the Decision Core and chose safe paths with if, elif, and else.",
   icon: "🧭",
 };
 
@@ -116,9 +126,10 @@ export const badgeAndromeda = {
  * Ordered collection of all canonical badges.
  */
 export const academyBadges = [
-  badgeStart,
-  badgeLoop,
-  badgeLogic,
+  badgeFirstContact,
+  badgeMemoryEngineer,
+  badgeSignalOperator,
+  badgeLogicNavigator,
   badgeFunction,
   badgePattern,
   badgeArray,

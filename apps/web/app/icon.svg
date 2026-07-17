@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="gra-body" x1="256" y1="26" x2="256" y2="348" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8B5CF6"/>
+      <stop offset="1" stop-color="#C13B9E"/>
+    </linearGradient>
+    <linearGradient id="gra-flame" x1="256" y1="360" x2="256" y2="486" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E1BDFF"/>
+      <stop offset="1" stop-color="#C13B9E"/>
+    </linearGradient>
+  </defs>
+  <!-- fins -->
+  <path d="M192 238 L120 330 C112 341 120 354 133 351 L192 338 Z" fill="#2A2153"/>
+  <path d="M320 238 L392 330 C400 341 392 354 379 351 L320 338 Z" fill="#2A2153"/>
+  <!-- body -->
+  <path d="M256 26 C212 70 192 142 192 218 L192 318 C192 332 202 342 216 342 L296 342 C310 342 320 332 320 318 L320 218 C320 142 300 70 256 26 Z" fill="url(#gra-body)"/>
+  <!-- window -->
+  <circle cx="256" cy="206" r="46" fill="#2A2153" stroke="#F7F9FA" stroke-width="12"/>
+  <!-- nozzle -->
+  <path d="M226 342 L286 342 L296 366 L216 366 Z" fill="#2A2153"/>
+  <!-- flame -->
+  <path d="M256 486 C230 442 222 406 227 372 L285 372 C290 406 282 442 256 486 Z" fill="url(#gra-flame)"/>
+</svg>

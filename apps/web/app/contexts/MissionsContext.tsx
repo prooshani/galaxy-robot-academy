@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { Mission } from "@galaxy/types";
 import { canonicalMissions } from "@/lib/academyContent";
+import { normalizeMissionId } from "@/lib/legacyIds";
 
 const MISSIONS_STORAGE_KEY = "gra_missions";
 const DELETED_MISSIONS_STORAGE_KEY = "gra_deletedMissionIds";
@@ -96,18 +97,26 @@ function loadInitialMissions(): Mission[] {
     const parsed = parseStoredMissions(JSON.parse(stored));
     if (!parsed) return canonicalMissions;
 
-    const deletedIds = parseDeletedMissionIds(window.localStorage.getItem(DELETED_MISSIONS_STORAGE_KEY));
-    const storedById = new Map(parsed.map((mission) => [mission.missionId, mission]));
+    // Normalize legacy IDs (mission-1 → mission-01) so stored entries match
+    // canonical missions instead of being appended as duplicates. Deleted-ID
+    // tombstones are normalized for the same reason.
+    const deletedIds = new Set(
+      [...parseDeletedMissionIds(window.localStorage.getItem(DELETED_MISSIONS_STORAGE_KEY))].map(normalizeMissionId),
+    );
+    const storedById = new Map(parsed.map((mission) => [normalizeMissionId(mission.missionId), mission]));
     const migratedCanonical = canonicalMissions
       .filter((mission) => !deletedIds.has(mission.missionId))
       .map((mission) => {
         const storedMission = storedById.get(mission.missionId);
         if (!storedMission) return mission;
         storedById.delete(mission.missionId);
+        // Untouched legacy fixtures (still carrying the original sample title,
+        // keyed by their ORIGINAL stored ID) are replaced by canonical content.
         const isUntouchedLegacyFixture =
           LEGACY_FIXTURE_TITLES[storedMission.missionId] === storedMission.title &&
           storedMission.slug === undefined && storedMission.status === undefined;
-        return isUntouchedLegacyFixture ? mission : storedMission;
+        // Teacher-edited missions survive, re-keyed onto the stable ID.
+        return isUntouchedLegacyFixture ? mission : { ...storedMission, missionId: mission.missionId };
       });
     return [...migratedCanonical, ...storedById.values()];
   } catch {

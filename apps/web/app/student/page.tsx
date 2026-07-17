@@ -16,6 +16,7 @@ import {
 } from "@galaxy/ui";
 import { GE_THRESHOLDS, RANK_NAMES } from "@galaxy/config";
 import type { Mission, MissionStatus } from "@galaxy/types";
+import type { QuizProgress, Submission } from "@galaxy/types";
 import { canonicalBadges as badges } from "@/lib/academyContent";
 import { useMissionsContext } from "@/app/contexts/MissionsContext";
 import { useSubmissions } from "@/app/contexts/SubmissionsContext";
@@ -64,7 +65,15 @@ export default function StudentDashboard() {
           {orderedMissions.length ? (
             <ol className="grid gap-4 md:grid-cols-2">
               {orderedMissions.map((mission) => (
-                <li key={mission.missionId}><MissionCard mission={mission} status={user.missionStatus[mission.missionId] ?? "notStarted"} /></li>
+                <li key={mission.missionId}>
+                  <MissionCard
+                    mission={mission}
+                    status={user.missionStatus[mission.missionId] ?? "notStarted"}
+                    quizProgress={mission.quizId ? user.quizzes[mission.quizId] : undefined}
+                    hasQuiz={Boolean(mission.quizId)}
+                    submission={submissions.find((s) => s.missionId === mission.missionId && s.userId === user.id)}
+                  />
+                </li>
               ))}
             </ol>
           ) : <EmptyState title="Mission feed is quiet" description="Mission Control is preparing your first assignment. Check back soon." />}
@@ -94,7 +103,7 @@ export default function StudentDashboard() {
 
 function NextMissionPanel({ mission, status }: { mission: Mission; status: MissionStatus }) {
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-brand/40 bg-gradient-to-br from-brand/15 via-panel to-brand-secondary/15 p-5 shadow-[var(--shadow-glow-cyan)] sm:p-8" aria-labelledby="next-mission-title">
+    <section className="relative overflow-hidden rounded-3xl border border-brand/40 bg-gradient-to-br from-brand/15 via-panel to-brand-secondary/15 p-5 shadow-[var(--shadow-glow-violet)] sm:p-8" aria-labelledby="next-mission-title">
       <div className="absolute -right-16 -top-16 size-48 rounded-full border border-brand/15" aria-hidden="true" />
       <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
         <div>
@@ -104,20 +113,23 @@ function NextMissionPanel({ mission, status }: { mission: Mission; status: Missi
           <div className="mt-5 flex flex-wrap gap-3"><GalaxyEnergyChip value={mission.rewardGE} />{mission.estimatedMinutes && <StatusChip tone="neutral">◷ {mission.estimatedMinutes} min</StatusChip>}{mission.robotUpgrade && <StatusChip tone="info">R0-B0 upgrade: {mission.robotUpgrade}</StatusChip>}</div>
           <p className="mt-5 text-sm font-medium text-brand">R0-B0: “I’m ready when you are, engineer.”</p>
         </div>
-        <Link href={`/mission/${mission.missionId}`} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-brand bg-brand px-5 font-bold text-canvas shadow-[var(--shadow-glow-cyan)] transition hover:brightness-110">Open Mission <span aria-hidden="true">→</span></Link>
+        <Link href={`/mission/${mission.missionId}`} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-brand bg-brand px-5 font-bold text-canvas shadow-[var(--shadow-glow-violet)] transition hover:brightness-110">Open Mission <span aria-hidden="true">→</span></Link>
       </div>
     </section>
   );
 }
 
-function MissionCard({ mission, status }: { mission: Mission; status: MissionStatus }) {
+function MissionCard({ mission, status, quizProgress, hasQuiz, submission }: { mission: Mission; status: MissionStatus; quizProgress?: QuizProgress; hasQuiz: boolean; submission?: Submission }) {
   const badgeReward = mission.badgeIds.map((id) => badges.find((badge) => badge.badgeId === id)?.name).filter(Boolean).join(", ");
+  const homeworkLabel = submission
+    ? submission.status === "needs_revision" ? "✎ Homework: revise" : submission.status === "reviewed" ? "✓ Homework reviewed" : "→ Homework sent"
+    : null;
   return (
     <article className="group h-full rounded-2xl border border-border bg-panel/75 p-5 transition duration-200 hover:-translate-y-0.5 hover:border-brand-secondary/45 motion-reduce:transform-none motion-reduce:transition-none">
       <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-xs font-bold uppercase tracking-[.14em] text-brand-secondary">Session {mission.sessionNumber}</span><MissionStatusChip status={status} /></div>
       <h3 className="mt-3 font-display text-xl font-semibold text-foreground">{mission.title}</h3>
       <p className="mt-2 line-clamp-3 text-sm text-muted">{mission.summary ?? mission.story}</p>
-      <div className="mt-4 flex flex-wrap gap-2"><GalaxyEnergyChip value={mission.rewardGE} />{mission.estimatedMinutes && <StatusChip>◷ {mission.estimatedMinutes} min</StatusChip>}</div>
+      <div className="mt-4 flex flex-wrap gap-2"><GalaxyEnergyChip value={mission.rewardGE} />{mission.estimatedMinutes && <StatusChip>◷ {mission.estimatedMinutes} min</StatusChip>}{hasQuiz && (quizProgress?.passed ? <StatusChip tone="success">✓ Quiz passed</StatusChip> : (quizProgress?.attempts ?? 0) > 0 ? <StatusChip tone="warning">Quiz in progress</StatusChip> : <StatusChip tone="neutral">Quiz ready</StatusChip>)}{homeworkLabel && <StatusChip tone={submission?.status === "needs_revision" ? "warning" : submission?.status === "reviewed" ? "success" : "submitted"}>{homeworkLabel}</StatusChip>}</div>
       {(mission.robotUpgrade || badgeReward) && <p className="mt-3 text-xs text-muted">Reward: {mission.robotUpgrade ?? badgeReward}</p>}
       <Link href={`/mission/${mission.missionId}`} aria-label={`Open mission ${mission.title}`} className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-border bg-elevated px-4 text-sm font-bold text-foreground transition group-hover:border-brand-secondary group-hover:text-brand-secondary">{status === "completed" ? "Review Mission" : "Open Mission"} <span className="ml-2" aria-hidden="true">→</span></Link>
     </article>

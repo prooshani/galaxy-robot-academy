@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 330" fill="none">
+  <defs>
+    <linearGradient id="gh-nose" x1="256" y1="26" x2="256" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8B5CF6"/>
+      <stop offset="1" stop-color="#B04BC4"/>
+    </linearGradient>
+    <linearGradient id="gh-fin" x1="256" y1="238" x2="256" y2="352" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A94BD9"/>
+      <stop offset="1" stop-color="#C13B9E"/>
+    </linearGradient>
+    <linearGradient id="gh-flame" x1="256" y1="360" x2="256" y2="486" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E1BDFF"/>
+      <stop offset="1" stop-color="#C13B9E"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(10 15) scale(0.5)">
+    <line x1="168" y1="170" x2="98" y2="60" stroke="#2A2153" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="92" cy="50" r="18" fill="#2A2153"/>
+    <rect x="10" y="250" width="70" height="150" rx="35" fill="#8F7FF0" stroke="#2A2153" stroke-width="10"/>
+    <circle cx="45" cy="298" r="10" fill="#2A2153"/>
+    <circle cx="45" cy="352" r="10" fill="#2A2153"/>
+    <rect x="560" y="250" width="70" height="150" rx="35" fill="#8F7FF0" stroke="#2A2153" stroke-width="10"/>
+    <circle cx="595" cy="298" r="10" fill="#2A2153"/>
+    <circle cx="595" cy="352" r="10" fill="#2A2153"/>
+    <path d="M92 340 A231 231 0 1 1 548 340 C540 396 508 416 476 394 C456 380 444 376 424 396 C398 422 362 434 334 412 C316 398 304 398 286 416 C260 442 222 432 204 402 C192 382 178 378 160 392 C126 418 98 392 92 340 Z" fill="#2A2153" stroke="#F7F9FA" stroke-width="18" stroke-linejoin="round"/>
+    <path d="M132 250 A200 200 0 0 1 508 250" stroke="#7C4DDB" stroke-width="34" stroke-linecap="round"/>
+    <g fill="#F7F9FA">
+      <path d="M172 208 Q175 219 186 222 Q175 225 172 236 Q169 225 158 222 Q169 219 172 208 Z"/>
+      <path d="M468 190 Q471 201 482 204 Q471 207 468 218 Q465 207 454 204 Q471 201 468 190 Z"/>
+      <path d="M400 118 Q402 126 410 128 Q402 130 400 138 Q398 130 390 128 Q398 126 400 118 Z"/>
+      <path d="M212 388 Q214 396 222 398 Q214 400 212 408 Q210 400 202 398 Q210 396 212 388 Z"/>
+      <path d="M448 356 Q450 364 458 366 Q450 368 448 376 Q446 368 438 366 Q446 364 448 356 Z"/>
+      <circle cx="238" cy="132" r="4"/>
+      <circle cx="356" cy="170" r="3"/>
+      <circle cx="150" cy="310" r="4"/>
+      <circle cx="502" cy="300" r="4"/>
+      <circle cx="308" cy="96" r="3"/>
+    </g>
+    <g transform="translate(161 104) scale(0.62)">
+      <path d="M192 238 L120 330 C112 341 120 354 133 351 L192 338 Z" fill="url(#gh-fin)"/>
+      <path d="M320 238 L392 330 C400 341 392 354 379 351 L320 338 Z" fill="url(#gh-fin)"/>
+      <path d="M256 26 C212 70 192 142 192 218 L192 318 C192 332 202 342 216 342 L296 342 C310 342 320 332 320 318 L320 218 C320 142 300 70 256 26 Z" fill="#F7F9FA"/>
+      <path d="M256 26 C228 54 210 96 202 142 L310 142 C302 96 284 54 256 26 Z" fill="url(#gh-nose)"/>
+      <circle cx="256" cy="206" r="46" fill="#2A2153" stroke="#F7F9FA" stroke-width="12"/>
+      <path d="M226 342 L286 342 L296 366 L216 366 Z" fill="#2A2153"/>
+      <path d="M256 486 C230 442 222 406 227 372 L285 372 C290 406 282 442 256 486 Z" fill="url(#gh-flame)"/>
+    </g>
+  </g>
+
+  <text x="370" y="160" font-family="'Space Grotesk','Inter',system-ui,sans-serif" font-weight="700" font-size="86" letter-spacing="4" fill="#2A2153">GALAXY ROBOT</text>
+  <text x="374" y="248" font-family="'Space Grotesk','Inter',system-ui,sans-serif" font-weight="700" font-size="52" letter-spacing="26" fill="#B3368C">ACADEMY</text>
+</svg>

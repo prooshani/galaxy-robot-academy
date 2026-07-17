@@ -71,7 +71,7 @@ export function MissionStatusChip({ status }: { status: string }) {
 
 export function AchievementCard({ name, description, icon, unlocked, missionLabel }: { name: string; description: string; icon: string; unlocked: boolean; missionLabel?: string }) {
   return (
-    <article className={cx("relative overflow-hidden rounded-2xl border p-5 transition duration-200 motion-reduce:transition-none", unlocked ? "border-brand/35 bg-gradient-to-br from-brand/12 to-panel shadow-[var(--shadow-glow-cyan)]" : "border-border bg-panel/55")}>
+    <article className={cx("relative overflow-hidden rounded-2xl border p-5 transition duration-200 motion-reduce:transition-none", unlocked ? "border-brand/35 bg-gradient-to-br from-brand/12 to-panel shadow-[var(--shadow-glow-violet)]" : "border-border bg-panel/55")}>
       <div className="flex items-start gap-4">
         <span className={cx("flex size-14 shrink-0 items-center justify-center rounded-2xl border text-2xl", unlocked ? "border-brand/40 bg-brand/10" : "border-border bg-canvas/50 grayscale")} aria-hidden="true">{unlocked ? icon : "◇"}</span>
         <div className="min-w-0 flex-1">

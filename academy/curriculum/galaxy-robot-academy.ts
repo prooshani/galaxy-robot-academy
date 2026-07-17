@@ -20,10 +20,10 @@ export const courseManifest = {
   totalSessions: 12,
   status: "active",
   missionIds: [
-    "mission-1",
-    "mission-2",
-    "mission-3",
-    "mission-4",
+    "mission-01",
+    "mission-02",
+    "mission-03",
+    "mission-04",
     "mission-5",
     "mission-6",
     "mission-7",
@@ -34,5 +34,5 @@ export const courseManifest = {
     "mission-12",
   ],
   finalProjectMissionId: "mission-12",
-  version: 1,
+  version: 2,
 };

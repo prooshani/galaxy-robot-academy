@@ -1,0 +1,22 @@
+rules_version = '2';
+
+// Cloud Storage rules for Galaxy Robot Academy.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Avatars: readable by any signed-in user (teachers see student avatars);
+    // writable only by the owner, limited to images under 5 MB.
+    match /avatars/{uid}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Everything else is denied by default.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

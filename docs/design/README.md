@@ -20,6 +20,7 @@ Design tokens and shared components outrank copied utility strings and route-loc
 
 - [UI Audit](UI_AUDIT.md)
 - [Brand Guide](BRAND_GUIDE.md)
+- [Style Reference](STYLE_REFERENCE.md) — midnight-void + Signal Violet direction (adapted from refero extraction)
 - [Design System](DESIGN_SYSTEM.md)
 - [Color System](COLOR_SYSTEM.md)
 - [Typography](TYPOGRAPHY.md)

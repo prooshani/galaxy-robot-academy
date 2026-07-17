@@ -1,70 +1,88 @@
 /**
- * Homework placeholders — one per mission.
+ * Homework definitions — one per mission.
  *
- * These are lightweight structural placeholders. The Decision Board
- * will replace them with approved teaching material.
+ * Sessions 01–04 carry the approved teaching material from
+ * materials/session-0X/HOMEWORK.md. Sessions 05–12 remain lightweight
+ * structural placeholders until their material is approved.
  *
  * This file is NOT part of the pnpm workspace — plain object literals only.
  */
 
 export const homework1 = {
-  homeworkId: "hw-1",
-  missionId: "mission-1",
-  title: "My First Program",
-  summary: "Write a program that prints a personalized greeting.",
+  homeworkId: "homework-01",
+  missionId: "mission-01",
+  title: "Galaxy Council Introduction",
+  summary:
+    "Write a program with at least eight print() messages that introduces your robot to the Galaxy Council.",
   requiredTasks: [
-    "Write a print statement with your name",
-    "Add a comment explaining your code",
+    "Print at least eight messages",
+    "Include: name, purpose, home base, destination, useful system, warning, joke, and a final message",
+    "Run the program and check the order makes sense",
   ],
-  bonusChallenge: "Make the greeting appear 3 times using a loop.",
+  bonusChallenge:
+    "Add a countdown, a robot face, an alien interruption, or an alternate ending.",
   estimatedMinutes: 20,
-  rewardGE: 10,
-  status: "draft",
+  rewardGE: 40,
+  status: "published",
+  reflectionField: "favoriteLineExplanation",
+  reflectionPrompt: "Which line is your favorite, and why?",
 };
 
 export const homework2 = {
-  homeworkId: "hw-2",
-  missionId: "mission-2",
-  title: "Dance Loop Challenge",
-  summary: "Create a dance routine with at least 4 moves in a loop.",
+  homeworkId: "homework-02",
+  missionId: "mission-02",
+  title: "Design an Exploration Robot",
+  summary:
+    "Create variables that describe your own exploration robot, then calculate one remaining or total value.",
   requiredTasks: [
-    "Use a for loop to repeat a move",
-    "Add a different move each iteration",
+    "Create variables for: robot name, model, home base, destination, energy, fuel cells, crew size, and favorite tool",
+    "Calculate one remaining or total value",
+    "Print the values so the profile is visible",
   ],
-  bonusChallenge: "Add a pause between moves for rhythm.",
+  bonusChallenge: "Add a second robot or an emergency calculation.",
   estimatedMinutes: 20,
-  rewardGE: 15,
-  status: "draft",
+  rewardGE: 45,
+  status: "published",
+  reflectionField: "variableNameReflection",
+  reflectionPrompt: "Which variable name are you most proud of, and why?",
 };
 
 export const homework3 = {
-  homeworkId: "hw-3",
-  missionId: "mission-3",
-  title: "Maze Decision Tree",
-  summary: "Draw a decision tree for a simple maze, then code it.",
+  homeworkId: "homework-03",
+  missionId: "mission-03",
+  title: "Crew Interview",
+  summary:
+    "Create an interactive program that interviews a crew member and builds a final report from their answers.",
   requiredTasks: [
-    "Draw the maze on paper",
-    "Write if/else for each intersection",
+    "Ask at least five questions: name, mission role, destination, age, and favorite space food",
+    "Use all the answers in a final report",
+    "Include one numeric calculation",
   ],
-  bonusChallenge: "Handle the case where no path exists.",
+  bonusChallenge: "Add a secret question, a custom greeting, or a supply total.",
   estimatedMinutes: 20,
-  rewardGE: 20,
-  status: "draft",
+  rewardGE: 45,
+  status: "published",
+  reflectionField: "interactivityReflection",
+  reflectionPrompt: "Which question made your program feel most interactive?",
 };
 
 export const homework4 = {
-  homeworkId: "hw-4",
-  missionId: "mission-4",
-  title: "Signal Function",
-  summary: "Write a function that takes a signal and returns a boosted version.",
+  homeworkId: "homework-04",
+  missionId: "mission-04",
+  title: "Planetary Safety Scanner",
+  summary:
+    "Build a safety scanner that asks about a planet and decides whether exploration is safe.",
   requiredTasks: [
-    "Define a function with parameters",
-    "Return a transformed value",
+    "Ask for: planet name, danger level 1–5, and an oxygen answer (yes or no)",
+    "Display one of: safe to explore, proceed with caution, or exploration cancelled",
+    "Use at least one if, one elif, and one else",
   ],
-  bonusChallenge: "Chain two functions together.",
+  bonusChallenge: "Add temperature, password clearance, or an emergency mode.",
   estimatedMinutes: 20,
-  rewardGE: 20,
-  status: "draft",
+  rewardGE: 50,
+  status: "published",
+  reflectionField: "ruleDesignReflection",
+  reflectionPrompt: "Which rule was hardest to design, and why?",
 };
 
 export const homework5 = {

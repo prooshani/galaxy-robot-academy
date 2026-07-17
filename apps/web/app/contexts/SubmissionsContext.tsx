@@ -2,200 +2,170 @@
 
 import {
   createContext,
-  useEffect,
+  useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 import type { Submission } from "@galaxy/types";
-import { submissions as initialSubmissions } from "@/lib/sampleSubmissions";
-import { applySubmissionReview } from "@/lib/teacherReview";
+import type { ReviewAction } from "@/lib/submissionLogic";
+import { useUser } from "@/app/contexts/UserContext";
 
-const SUBMISSIONS_STORAGE_KEY = "gra_submissionsState";
-type SubmissionStatus = Submission["status"];
-
-const VALID_SUBMISSION_STATUSES: SubmissionStatus[] = [
-  "submitted",
-  "reviewed",
-  "needs_revision",
-];
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isSubmissionStatus(value: unknown): value is SubmissionStatus {
-  return (
-    typeof value === "string" &&
-    VALID_SUBMISSION_STATUSES.includes(value as SubmissionStatus)
-  );
-}
-
-function parseSubmission(value: unknown): Submission | null {
-  if (!isRecord(value)) {
-    return null;
-  }
-
-  if (
-    typeof value.submissionId !== "string" ||
-    typeof value.missionId !== "string" ||
-    typeof value.userId !== "string" ||
-    typeof value.codeSnippet !== "string" ||
-    typeof value.timestamp !== "string" ||
-    !isSubmissionStatus(value.status) ||
-    typeof value.geAwarded !== "number" ||
-    (value.feedback !== undefined && typeof value.feedback !== "string")
-  ) {
-    return null;
-  }
-
-  return {
-    submissionId: value.submissionId,
-    missionId: value.missionId,
-    userId: value.userId,
-    codeSnippet: value.codeSnippet,
-    timestamp: value.timestamp,
-    status: value.status,
-    geAwarded: value.geAwarded,
-    feedback: value.feedback,
-  };
-}
-
-function parseStoredSubmissions(value: unknown): Submission[] | null {
-  if (!Array.isArray(value)) {
-    return null;
-  }
-
-  const parsedSubmissions: Submission[] = [];
-  for (const submission of value) {
-    const parsedSubmission = parseSubmission(submission);
-    if (!parsedSubmission) {
-      return null;
-    }
-    parsedSubmissions.push(parsedSubmission);
-  }
-
-  return parsedSubmissions;
-}
-
-function clearStoredSubmissions(): void {
-  try {
-    window.localStorage.removeItem(SUBMISSIONS_STORAGE_KEY);
-  } catch {
-    // Ignore cleanup failures and fall back to sample data.
-  }
-}
-
-function loadInitialSubmissions(): Submission[] {
-  if (typeof window === "undefined") {
-    return initialSubmissions;
-  }
-
-  try {
-    const storedSubmissions = window.localStorage.getItem(
-      SUBMISSIONS_STORAGE_KEY
-    );
-    if (!storedSubmissions) {
-      return initialSubmissions;
-    }
-
-    const parsedSubmissions = parseStoredSubmissions(
-      JSON.parse(storedSubmissions) as unknown
-    );
-    if (parsedSubmissions) {
-      return parsedSubmissions;
-    }
-
-    clearStoredSubmissions();
-  } catch {
-    clearStoredSubmissions();
-  }
-
-  return initialSubmissions;
-}
+// Submissions are Firestore-backed through the server API. Students receive
+// only their own submissions; teachers/admins receive everything (enriched
+// with student names + quiz progress). localStorage is never canonical.
 
 interface AddSubmissionInput {
   missionId: string;
-  userId: string;
   codeSnippet: string;
+  reflection: string;
+}
+
+interface ResubmitInput {
+  submissionId: string;
+  codeSnippet: string;
+  reflection?: string;
 }
 
 interface ReviewSubmissionInput {
   submissionId: string;
-  geAwarded: number;
+  action: ReviewAction;
   feedback: string;
-  status?: "reviewed" | "needs_revision";
+  geAward: number;
+}
+
+export interface SubmissionActionResult {
+  ok: boolean;
+  error?: string;
+  submission?: Submission;
 }
 
 interface SubmissionsContextValue {
   submissions: Submission[];
-  addSubmission: (input: AddSubmissionInput) => Submission;
-  reviewSubmission: (input: ReviewSubmissionInput) => void;
+  /** "loading" until the first fetch resolves for an authed user. */
+  status: "idle" | "loading" | "ready" | "error";
+  addSubmission: (input: AddSubmissionInput) => Promise<SubmissionActionResult>;
+  resubmitSubmission: (input: ResubmitInput) => Promise<SubmissionActionResult>;
+  reviewSubmission: (input: ReviewSubmissionInput) => Promise<SubmissionActionResult>;
+  refreshSubmissions: () => Promise<void>;
 }
 
-const SubmissionsContext = createContext<SubmissionsContextValue | undefined>(
-  undefined
-);
+const SubmissionsContext = createContext<SubmissionsContextValue | undefined>(undefined);
+
+async function parseResult(res: Response): Promise<SubmissionActionResult> {
+  const data = (await res.json().catch(() => null)) as
+    | { submission?: Submission; error?: string }
+    | null;
+  if (!res.ok) {
+    return { ok: false, error: data?.error ?? "Transmission failed. Try again." };
+  }
+  return { ok: true, submission: data?.submission };
+}
 
 export function SubmissionsProvider({ children }: { children: ReactNode }) {
-  const [submissions, setSubmissions] =
-    useState<Submission[]>(loadInitialSubmissions);
+  const { authStatus } = useUser();
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [status, setStatus] = useState<SubmissionsContextValue["status"]>("idle");
+
+  const refreshSubmissions = useCallback(async () => {
+    try {
+      const res = await fetch("/api/submissions", { cache: "no-store" });
+      if (!res.ok) {
+        setStatus("error");
+        return;
+      }
+      const data = (await res.json()) as { submissions?: Submission[] };
+      setSubmissions(Array.isArray(data.submissions) ? data.submissions : []);
+      setStatus("ready");
+    } catch {
+      setStatus("error");
+    }
+  }, []);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        SUBMISSIONS_STORAGE_KEY,
-        JSON.stringify(submissions)
-      );
-    } catch {
-      // Ignore storage failures so context state remains usable.
+    if (authStatus === "authed") {
+      setStatus("loading");
+      void refreshSubmissions();
+    } else if (authStatus === "anon") {
+      setSubmissions([]);
+      setStatus("ready");
     }
-  }, [submissions]);
+  }, [authStatus, refreshSubmissions]);
 
-  const addSubmission = (input: AddSubmissionInput) => {
-    const submission: Submission = {
-      submissionId: `submission-${Date.now()}`,
-      missionId: input.missionId,
-      userId: input.userId,
-      codeSnippet: input.codeSnippet,
-      timestamp: new Date().toISOString(),
-      status: "submitted",
-      geAwarded: 0,
-    };
+  const addSubmission = useCallback(
+    async (input: AddSubmissionInput): Promise<SubmissionActionResult> => {
+      const res = await fetch("/api/submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }).catch(() => null);
+      if (!res) return { ok: false, error: "Network error. Check your connection and retry." };
+      const result = await parseResult(res);
+      if (result.ok && result.submission) {
+        const created = result.submission;
+        setSubmissions((current) => [created, ...current]);
+      }
+      return result;
+    },
+    [],
+  );
 
-    setSubmissions((currentSubmissions) => [
-      submission,
-      ...currentSubmissions,
-    ]);
+  const resubmitSubmission = useCallback(
+    async (input: ResubmitInput): Promise<SubmissionActionResult> => {
+      const res = await fetch(`/api/submissions/${input.submissionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resubmit: true,
+          codeSnippet: input.codeSnippet,
+          reflection: input.reflection,
+        }),
+      }).catch(() => null);
+      if (!res) return { ok: false, error: "Network error. Check your connection and retry." };
+      const result = await parseResult(res);
+      if (result.ok && result.submission) {
+        const updated = result.submission;
+        setSubmissions((current) =>
+          current.map((s) => (s.submissionId === updated.submissionId ? { ...s, ...updated } : s)),
+        );
+      }
+      return result;
+    },
+    [],
+  );
 
-    return submission;
-  };
-
-  const reviewSubmission = (input: ReviewSubmissionInput) => {
-    setSubmissions((currentSubmissions) =>
-      currentSubmissions.map((submission) =>
-        submission.submissionId === input.submissionId
-          ? applySubmissionReview(submission, {
-              status: input.status ?? "reviewed",
-              geAwarded: input.geAwarded,
-              feedback: input.feedback,
-            })
-          : submission
-      )
-    );
-  };
+  const reviewSubmission = useCallback(
+    async (input: ReviewSubmissionInput): Promise<SubmissionActionResult> => {
+      const res = await fetch(`/api/submissions/${input.submissionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: input.action,
+          feedback: input.feedback,
+          geAward: input.geAward,
+        }),
+      }).catch(() => null);
+      if (!res) return { ok: false, error: "Network error. Check your connection and retry." };
+      const result = await parseResult(res);
+      if (result.ok && result.submission) {
+        const updated = result.submission;
+        setSubmissions((current) =>
+          current.map((s) => (s.submissionId === updated.submissionId ? { ...s, ...updated } : s)),
+        );
+      }
+      return result;
+    },
+    [],
+  );
 
   const value = useMemo(
-    () => ({ submissions, addSubmission, reviewSubmission }),
-    [submissions]
+    () => ({ submissions, status, addSubmission, resubmitSubmission, reviewSubmission, refreshSubmissions }),
+    [submissions, status, addSubmission, resubmitSubmission, reviewSubmission, refreshSubmissions],
   );
 
-  return (
-    <SubmissionsContext.Provider value={value}>
-      {children}
-    </SubmissionsContext.Provider>
-  );
+  return <SubmissionsContext.Provider value={value}>{children}</SubmissionsContext.Provider>;
 }
 
 export function useSubmissions() {

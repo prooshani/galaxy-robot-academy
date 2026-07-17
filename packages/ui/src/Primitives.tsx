@@ -22,7 +22,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export function Button({ className, variant = "primary", size = "md", loading, disabled, children, ...props }: ButtonProps) {
   const variants: Record<ButtonVariant, string> = {
-    primary: "border-brand bg-brand text-canvas shadow-[var(--shadow-glow-cyan)] hover:brightness-110",
+    primary: "border-brand bg-brand text-canvas shadow-[var(--shadow-glow-violet)] hover:brightness-110",
     secondary: "border-border bg-elevated text-foreground hover:border-brand-secondary",
     ghost: "border-transparent bg-transparent text-muted hover:bg-white/5 hover:text-foreground",
     danger: "border-danger/40 bg-danger/15 text-red-200 hover:bg-danger/25",

@@ -15,6 +15,21 @@ import { academyBadges } from "@academy/badges";
 import { academyHomework } from "@academy/homework";
 import { courseManifest } from "@academy/curriculum/galaxy-robot-academy";
 
+import { normalizeBadgeId, normalizeMissionId } from "./legacyIds";
+
+export { LEGACY_BADGE_ID_MAP, LEGACY_MISSION_ID_MAP, normalizeBadgeId, normalizeMissionId } from "./legacyIds";
+
+// Student-facing quiz shape (no answer key / explanations). Quiz DATA is
+// server-only (lib/serverQuizzes.ts) so answers never reach the client
+// bundle; the browser fetches this shape from GET /api/quizzes/[quizId].
+export type { StudentQuiz, StudentQuizQuestion } from "./quizLogic";
+
+// Quiz-wide constants per the approved quiz guidelines (enforced for every
+// quiz file by scripts/validate-curriculum.mjs), safe for client display.
+export const QUIZ_QUESTION_COUNT = 7;
+export const QUIZ_PASSING_SCORE = 5;
+export const QUIZ_REWARD_GE = 10;
+
 /**
  * The current version of the canonical academy content.
  *
@@ -63,10 +78,11 @@ function parseCourseStatus(value: string): Course["status"] {
 }
 
 /**
- * Lookup a mission by its missionId.
+ * Lookup a mission by its missionId (legacy IDs are normalized).
  */
 export function getMissionById(id: string): Mission | undefined {
-  return canonicalMissions.find((m) => m.missionId === id);
+  const normalized = normalizeMissionId(id);
+  return canonicalMissions.find((m) => m.missionId === normalized);
 }
 
 /**
@@ -98,10 +114,11 @@ export function getAllBadges(): Badge[] {
 }
 
 /**
- * Lookup homework by missionId.
+ * Lookup homework by missionId (legacy IDs are normalized).
  */
 export function getHomeworkByMissionId(missionId: string): HomeworkMission | undefined {
-  return canonicalHomework.find((h) => h.missionId === missionId);
+  const normalized = normalizeMissionId(missionId);
+  return canonicalHomework.find((h) => h.missionId === normalized);
 }
 
 /**

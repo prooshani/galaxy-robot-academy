@@ -5,8 +5,8 @@ Foundations → primitives → composed components → route composition. Tokens
 ## Foundations
 
 - Spacing: 4px base; `1=4`, `2=8`, `3=12`, `4=16`, `5=20`, `6=24`, `8=32`, `10=40`, `12=48`, `16=64`.
-- Radius: `sm 6`, `md 10`, `lg 16`, `xl 24`, `pill 9999` px.
-- Borders: 1px default, 2px selected reinforcement. Focus rings do not replace borders.
+- Radius: `sm/buttons 8`, `md/inputs 12`, `lg 16`, `xl/cards 20`, `pill 9999` px. Buttons are 8px or pill — nothing between.
+- Borders: 1px hairlines are the default separator (`--hairline-soft` rgb(247 249 250 / .12), `--hairline-strong` .24); 2px selected reinforcement. Focus rings do not replace borders. Separation comes from hairlines and luminance, not shadow weight.
 - Opacity: disabled 45%, muted decoration 8–20%, modal overlay 72%.
 - Motion: 120/180/260/420ms; see [Animation Guidelines](ANIMATION_GUIDELINES.md).
 - Icons: 16/20/24/32px; stroke 1.75–2px; decorative icons are hidden from assistive technology.
@@ -16,7 +16,7 @@ Foundations → primitives → composed components → route composition. Tokens
 
 ## Elevation and shadows
 
-Elevation describes physical stacking, not importance, selection, focus, or reward. Values are exact canonical CSS tokens.
+Elevation describes physical stacking, not importance, selection, focus, or reward. The system is hairline-first (see [Style Reference](STYLE_REFERENCE.md)): shadows below are ambient softeners, never the primary separator — a surface must still read correctly with its shadow removed. Values are exact canonical CSS tokens.
 
 | Level | Semantic token | Exact `box-shadow` | Intended components | Surface | Border | Overlay relationship |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -30,7 +30,7 @@ Rules:
 
 - Use the lowest level that communicates overlap. Do not increase elevation on hover; a card may translate 2px while retaining level 1.
 - Focus is `0 0 0 3px #70E7FA` outside the component, separated by a 2px canvas-colored gap when adjacent colors reduce clarity. Focus remains visible over every elevation.
-- Glow is decorative brand atmosphere (`glow-cyan`, `glow-purple` in [Color System](COLOR_SYSTEM.md)); never indicates focus, selection, validation, or stacking. One component must not combine two glows.
+- Glow is decorative brand atmosphere (`glow-violet`, `glow-cyan`, `glow-purple` in [Color System](COLOR_SYSTEM.md)); never indicates focus, selection, validation, or stacking. One component must not combine two glows; one viewport carries at most one violet bloom.
 - Selected, checked, expanded, and invalid states use semantic border, icon, label, and/or surface changes without changing elevation.
 - Shadows stay broad, low-alpha, and neutral. No hard black outlines, white shadows, colored drop shadows, or stacked multi-shadow “neon” borders.
 - Dark-theme separation must not depend on shadow alone. Adjacent surfaces require a border and sufficient luminance difference. Validate composited text and meaningful graphics at WCAG AA contrast.

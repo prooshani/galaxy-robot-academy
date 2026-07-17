@@ -13,30 +13,31 @@ export const user: User = {
   role: null,
   totalGE: 225,
   rankId: "navigator",
-  badgeIds: ["badge-start", "badge-loop", "badge-logic"],
+  badgeIds: ["first-contact", "memory-engineer", "signal-operator"],
   missionStatus: {
-    "mission-1": "completed",
-    "mission-2": "completed",
-    "mission-3": "completed",
-    "mission-4": "notStarted",
+    "mission-01": "completed",
+    "mission-02": "completed",
+    "mission-03": "completed",
+    "mission-04": "notStarted",
   },
   missionTasksCompleted: {
-    "mission-1": {
+    "mission-01": {
       requiredTasks: [true, true, true],
-      bonusTasks: [true, false],
+      bonusTasks: [true, false, false],
     },
-    "mission-2": {
-      requiredTasks: [true, true, true],
+    "mission-02": {
+      requiredTasks: [true, true, true, true],
       bonusTasks: [false, false],
     },
-    "mission-3": {
-      requiredTasks: [true, true, true],
-      bonusTasks: [false, false],
+    "mission-03": {
+      requiredTasks: [true, true, true, true],
+      bonusTasks: [false, false, false],
     },
-    "mission-4": {
-      requiredTasks: [false, false, false],
-      bonusTasks: [false, false],
+    "mission-04": {
+      requiredTasks: [false, false, false, false],
+      bonusTasks: [false, false, false],
     },
   },
+  quizzes: {},
   createdAt: "2026-07-01T00:00:00Z",
 };

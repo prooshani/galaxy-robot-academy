@@ -1,0 +1,83 @@
+rules_version = '2';
+
+// Security rules for the "galaxy-robot-academy-db" Firestore database.
+//
+// Profiles are split by role into three collections: students, teachers, admins.
+// The role is also carried on the auth token as a custom claim `role`
+// ("student" | "teacher" | "admin"), set server-side via the Admin SDK.
+// Docs are created and privileged fields written only by the server (Admin SDK,
+// which bypasses these rules); owners may edit a limited field set directly.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isTeacher() {
+      return isSignedIn() && request.auth.token.role == 'teacher';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.role == 'admin';
+    }
+
+    function isStaff() {
+      return isTeacher() || isAdmin();
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Owner may only touch these top-level keys. `extra` lets a role add its own
+    // editable group (e.g. teachers editing `teaching`).
+    function ownerEditableOnly(extra) {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['displayName', 'avatarId', 'suit', 'contact', 'personal', 'preferences', 'updatedAt'].concat(extra));
+    }
+
+    // Students: own read; staff read all. GE/progress written server-side.
+    match /students/{uid} {
+      allow read: if isOwner(uid) || isStaff();
+      allow create: if false;
+      allow update: if isStaff() || (isOwner(uid) && ownerEditableOnly([]));
+      allow delete: if false;
+    }
+
+    // Teachers (capitans): own read; staff read all. May edit `teaching`.
+    match /teachers/{uid} {
+      allow read: if isOwner(uid) || isStaff();
+      allow create: if false;
+      allow update: if isAdmin() || (isOwner(uid) && ownerEditableOnly(['teaching']));
+      allow delete: if false;
+    }
+
+    // Admins: readable/writable only by admins; owner may edit their base fields.
+    match /admins/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if false;
+      allow update: if isAdmin() || (isOwner(uid) && ownerEditableOnly([]));
+      allow delete: if false;
+    }
+
+    // Missions: any signed-in cadet can read; staff author/edit.
+    match /missions/{missionId} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    // Submissions: written and read ONLY through the server API (Admin SDK,
+    // which bypasses these rules). The API enforces ownership (students see
+    // and edit only their own docs), review authorization (teachers/admins),
+    // and idempotent GE/badge awards — so direct client access stays closed.
+    match /submissions/{submissionId} {
+      allow read, write: if false;
+    }
+
+    // Everything else is denied by default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

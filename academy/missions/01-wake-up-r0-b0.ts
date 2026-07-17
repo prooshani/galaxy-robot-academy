@@ -1,44 +1,57 @@
 /**
- * Mission 1 — Wake Up R0-B0
+ * Mission 01 — Wake Up R0-B0
  *
  * Canonical mission definition for Session 1.
  * Educational content authors should edit this file.
+ * Source: materials/session-01/WEBSITE_CONTENT.md (approved).
  */
 
 export const mission1 = {
-  missionId: "mission-1",
+  missionId: "mission-01",
   sessionNumber: 1,
   slug: "wake-up-r0-b0",
-  title: "Hello, Galaxy!",
-  shortTitle: "Wake Up R0-B0",
+  title: "Wake Up R0-B0",
+  shortTitle: "Speech Module",
   story:
-    "R0-B0 has landed on a distant planet and needs to send its first signal home. Help the robot wake up its communication system by writing its first program.",
+    "R0-B0's hardware is ready, but its software is empty. The robot has landed on a distant planet and cannot say a single word. Install the Speech Module by writing your first Python program and teaching R0-B0 to speak.",
   summary:
-    "Write your first program to print a greeting to the console and understand basic variables.",
+    "Write your first program with print(), learn why text needs quotation marks, and discover that code runs in order.",
   learningObjectives: [
-    "Write your first program",
-    "Print a greeting to the console",
-    "Understand variables",
+    "Write and run your first print() statement",
+    "Explain why text needs quotation marks",
+    "Show that code runs from top to bottom, in order",
   ],
   objectives: [
-    "Write your first program",
-    "Print a greeting to the console",
-    "Understand variables",
+    "Write and run your first print() statement",
+    "Explain why text needs quotation marks",
+    "Show that code runs from top to bottom, in order",
   ],
   requiredTasks: [
-    "Open a text editor",
-    "Write a print statement",
-    "Run the program",
+    "Write a print() statement that runs without an error",
+    "Print at least eight messages for the Galaxy Council: name, purpose, home base, destination, useful system, warning, joke, and a final message",
+    "Run your program and check the messages appear in the right order",
   ],
-  bonusTasks: ["Add your name to the greeting", "Print a second message"],
-  rewardGE: 50,
-  badgeIds: ["badge-start"],
+  bonusTasks: [
+    "Add a countdown before the final message",
+    "Draw a robot face using print()",
+    "Add an alien interruption or an alternate ending",
+  ],
+  rewardGE: 55,
+  badgeIds: ["first-contact"],
   prerequisites: [],
-  estimatedMinutes: 45,
+  estimatedMinutes: 80,
   status: "published",
-  robotUpgrade: "Communication Module v1.0",
+  robotUpgrade: "Speech Module",
   spaceFact:
     "The first message sent from Earth to space was a radio signal in 1924, and it still travels through the galaxy today.",
   submissionInstructions:
-    "Submit your code that prints a greeting message to the console. Include your name in the output.",
+    "Paste your Galaxy Council introduction program: at least eight print() messages in a sensible order.",
+  quizId: "quiz-01",
+  homeworkId: "homework-01",
+  robotMessages: {
+    before: "My power core is active, but I cannot speak yet.",
+    submitted: "Transmission sent. Awaiting review.",
+    revision: "Let us inspect the quotation marks and parentheses.",
+    complete: "Speech Module installed. Hello, engineers!",
+  },
 };

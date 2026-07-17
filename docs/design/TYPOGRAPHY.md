@@ -1,12 +1,15 @@
 # Typography
 
+Four voices (see [Style Reference](STYLE_REFERENCE.md)): geometric display, readable workhorse, stamped mono signposts, rare italic serif drama.
+
 ## Families
 
-- **Display:** Space Grotesk, `system-ui`, sans-serif. Use via `next/font/google` or self-hosted approved files. Titles only.
-- **Heading/body:** Inter, `system-ui`, `-apple-system`, `Segoe UI`, sans-serif. One readable family minimizes load and drift.
-- **Code:** JetBrains Mono, `SFMono-Regular`, Consolas, `Liberation Mono`, monospace.
+- **Display:** Space Grotesk, `system-ui`, sans-serif (`--font-display`). Titles and hero headings only.
+- **Heading/body:** Inter, `system-ui`, `-apple-system`, `Segoe UI`, sans-serif (`--font-sans`). One readable family minimizes load and drift.
+- **Mono / stamp:** JetBrains Mono, `SFMono-Regular`, Consolas, monospace (`--font-mono`). Two jobs: code (normal tracking) and stamped section labels via `.stamp-label` (uppercase, `0.2em` tracking, weight 400).
+- **Serif display:** Lora Italic (`--font-serif-display`, `.display-serif`). Hero echo lines only, ≥32px, maximum two–three moments per page. Never body, nav, forms, or beside a stamp label on the same line.
 
-Load with Next.js font integration; expose CSS variables; use `display: swap`. No remote CSS `@import` at runtime. If product avoids external requests, self-host licensed WOFF2.
+Load with `next/font/google`; expose CSS variables; `display: swap`. No remote CSS `@import` at runtime.
 
 ## Scale
 
@@ -20,7 +23,9 @@ Load with Next.js font integration; expose CSS variables; use `display: swap`. N
 | `body-lg` | 18 / 18 | 1.6 | 400 | briefing lead |
 | `body` | 16 / 16 | 1.55 | 400 | default |
 | `body-sm` | 14 / 14 | 1.5 | 400/500 | metadata |
-| `label` | 12 / 12 | 1.35 | 600 | technical label |
+| `stamp` | 12–14 / 12–24 | 1.2 | 400 | mono section labels, `0.2em` tracking, uppercase |
+| `stamp-lg` | 20 / 32 | 1.1 | 400 | section signpost headings (source style's "74px stamp", scaled for kids) |
+| `serif-display` | 32 / 40–56 | 1.15 | 500 italic | hero echo lines |
 | `code` | 14 / 15 | 1.65 | 400 | code/input |
 
-Display uses `-0.02em`; headings `-0.01em`; body normal; technical labels `0.08em` uppercase sparingly. Paragraph measure: 55–70 characters, mission brief maximum `68ch`, forms `64ch`, code unrestricted with horizontal overflow. Do not use display font for instructions, tables, forms, or long copy. Respect 200% zoom and user font scaling.
+Display uses `-0.02em`; headings `-0.01em`; body normal; stamp labels `0.2em` (`--tracking-stamp`) — the tracking is the design, no underline or decoration. Old bold-uppercase eyebrows (`tracking .14–.18em`, weight 700) are deprecated in favor of `.stamp-label`. Paragraph measure: 55–70 characters, mission brief maximum `68ch`, forms `64ch`, code unrestricted with horizontal overflow. Do not use display or serif fonts for instructions, tables, forms, or long copy. Respect 200% zoom and user font scaling.
